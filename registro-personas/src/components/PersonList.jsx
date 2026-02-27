@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { getAllPersons, deletePerson } from '../services/personService';
 import PersonCard from './PersonCard';
 
@@ -6,6 +6,7 @@ const PersonList = ({ refresh, onEdit }) => {
   const [persons, setPersons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [search, setSearch] = useState('');
 
   const loadPersons = async () => {
     setLoading(true);
@@ -32,8 +33,18 @@ const PersonList = ({ refresh, onEdit }) => {
   };
 
   const handleEdit = (person) => {
-    onEdit(person); // 🔥 ENVÍA PERSONA COMPLETA
+    onEdit(person);
   };
+
+  const filteredPersons = useMemo(() => {
+    return persons.filter(person =>
+      person.nombre?.toLowerCase().includes(search.toLowerCase()) ||
+      person.apellido?.toLowerCase().includes(search.toLowerCase()) ||
+      person.email?.toLowerCase().includes(search.toLowerCase()) ||
+      person.telefono?.toLowerCase().includes(search.toLowerCase()) ||
+      person.edad?.toLowerCase().includes(search.toLowerCase()) 
+    );
+  }, [search, persons]);
 
   useEffect(() => {
     loadPersons();
@@ -43,15 +54,29 @@ const PersonList = ({ refresh, onEdit }) => {
   if (error) return <p>{error}</p>;
 
   return (
-    <div className="person-list">
-      {persons.map(person => (
-        <PersonCard
-          key={person.id}
-          person={person}
-          onDelete={() => handleDelete(person.id)}
-          onEdit={() => handleEdit(person)}
+    <div>
+      <div className="form-group">
+        <input
+          type="text"
+          placeholder="Buscar persona..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="search-input"
         />
-      ))}
+
+      </div>
+
+      <div className="person-list">
+        {filteredPersons.map(person => (
+          <PersonCard
+            key={person.id}
+            person={person}
+            onDelete={() => handleDelete(person.id)}
+            onEdit={() => handleEdit(person)}
+          />
+        ))}
+      </div>
+
     </div>
   );
 };

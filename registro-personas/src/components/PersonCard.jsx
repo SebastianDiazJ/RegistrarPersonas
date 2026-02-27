@@ -1,4 +1,5 @@
 const PersonCard = ({ person, onDelete, onEdit }) => {
+  
   return (
     <div className="person-card">
       <div className="person-header">

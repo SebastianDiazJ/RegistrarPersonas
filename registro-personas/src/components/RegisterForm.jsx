@@ -60,7 +60,7 @@ const RegisterForm = ({ selectedPerson, onFinish }) => {
         </div>
 
         <div className="form-group">
-          <label>Email</label>
+          <label>Correo electrónico</label>
           <input
             type="email"
             value={form.email}
