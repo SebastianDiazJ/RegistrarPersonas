@@ -43,6 +43,7 @@ const RegisterForm = ({ selectedPerson, onFinish }) => {
       <h2>{selectedPerson ? 'Editar persona' : 'Registrar persona'}</h2>
 
       <form onSubmit={handleSubmit}>
+        
         <div className="form-group">
           <label>Nombre</label>
           <input
@@ -67,7 +68,6 @@ const RegisterForm = ({ selectedPerson, onFinish }) => {
             type="email"
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
-            required
           />
         </div>
 
