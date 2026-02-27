@@ -65,8 +65,17 @@ body {
 }
 
 @keyframes pulse {
-  0%, 100% { transform: scale(1); opacity: 0.5; }
-  50% { transform: scale(1.1); opacity: 0.3; }
+
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+
+  50% {
+    transform: scale(1.1);
+    opacity: 0.3;
+  }
 }
 
 .header-content {
@@ -81,8 +90,15 @@ body {
 }
 
 @keyframes bounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
 }
 
 .app-header h1 {
@@ -171,6 +187,7 @@ body {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -190,6 +207,7 @@ body {
     opacity: 0;
     transform: translateX(-30px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -201,6 +219,7 @@ body {
     opacity: 0;
     transform: translateX(30px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -221,6 +240,7 @@ body {
     opacity: 0;
     transform: translateY(30px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -266,7 +286,8 @@ body {
   font-size: 1rem;
   transition: var(--transition);
   background: #f7fafc;
-  color: #2d3748; /* Color oscuro para asegurar visibilidad */
+  color: #2d3748;
+  /* Color oscuro para asegurar visibilidad */
 }
 
 .form-group input:focus {
@@ -341,6 +362,7 @@ body {
     opacity: 0;
     transform: translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -409,6 +431,7 @@ body {
     opacity: 0;
     transform: scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -674,6 +697,7 @@ html {
 ::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
 }
+
 .card-actions {
   display: flex;
   gap: 0.5rem;
@@ -686,4 +710,30 @@ html {
   padding: 0.5rem 0.8rem;
   border-radius: 6px;
   cursor: pointer;
+}
+
+.person-counter {
+  margin-bottom: 15px;
+  font-weight: 500;
+  color: #555;
+}
+
+.birthday-counter {
+  background: #e8f5e9;
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  font-weight: bold;
+  color: #2e7d32;
+}
+
+.birthday-box {
+  background: #f1f8e9;
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.nameBirthday {
+  color: #2e7d32;
 }

@@ -7,7 +7,8 @@ const RegisterForm = ({ selectedPerson, onFinish }) => {
     apellido: '',
     edad: '',
     email: '',
-    telefono: ''
+    telefono: '',
+    fechaNacimiento: ''
   });
 
   useEffect(() => {
@@ -18,7 +19,8 @@ const RegisterForm = ({ selectedPerson, onFinish }) => {
         apellido: selectedPerson.apellido || '',
         edad: selectedPerson.edad || '',
         email: selectedPerson.email || '',
-        telefono: selectedPerson.telefono || ''
+        telefono: selectedPerson.telefono || '',
+        fechaNacimiento: selectedPerson.fechaNacimiento || ''
       });
     }
   }, [selectedPerson]);
@@ -33,7 +35,7 @@ const RegisterForm = ({ selectedPerson, onFinish }) => {
     }
 
     onFinish();
-    setForm({ nombre: '', apellido: '', edad: '', email: '', telefono: '' });
+    setForm({ nombre: '', apellido: '', edad: '', email: '', telefono: '', fechaNacimiento: '' });
   };
 
   return (
@@ -84,6 +86,16 @@ const RegisterForm = ({ selectedPerson, onFinish }) => {
             type="number"
             value={form.edad}
             onChange={(e) => setForm({ ...form, edad: e.target.value })}
+            required
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Cumpleaños</label>
+          <input
+            type="date"
+            value={form.fechaNacimiento}
+            onChange={(e) => setForm({ ...form, fechaNacimiento: e.target.value })}
             required
           />
         </div>

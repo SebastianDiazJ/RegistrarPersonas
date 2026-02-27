@@ -1,5 +1,5 @@
 const PersonCard = ({ person, onDelete, onEdit }) => {
-  
+
   return (
     <div className="person-card">
       <div className="person-header">
@@ -10,6 +10,20 @@ const PersonCard = ({ person, onDelete, onEdit }) => {
       <div className="person-details">
         <p>📧 {person.email}</p>
         <p>📱 {person.telefono}</p>
+        <p>
+          🎂 {person.fechaNacimiento
+            ? (() => {
+              const [year, month, day] = person.fechaNacimiento.split('-');
+              const date = new Date(year, month - 1, day); // 👈 local, sin UTC
+
+              return date.toLocaleDateString('es-CO', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+              });
+            })()
+            : 'Sin fecha'}
+        </p>
       </div>
 
       <div className="card-actions">
