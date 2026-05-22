@@ -1,39 +1,56 @@
 import { useState, useEffect, useMemo } from 'react';
-import { getAllPersons, deletePerson } from '../services/personService';
+import { getAllPersons, deletePerson, markAbsence, resetAbsences } from '../services/personService';
 import PersonCard from './PersonCard';
 
-const PersonList = ({ refresh, onEdit }) => {
+const MESES = [
+  '','Enero','Febrero','Marzo','Abril','Mayo','Junio',
+  'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'
+];
+
+const AUSENCIAS_ALERTA = 3;
+
+const PersonList = ({ red, refresh, onEdit }) => {
   const [persons, setPersons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
+  const [alertOpen, setAlertOpen] = useState(true);
 
   const loadPersons = async () => {
     setLoading(true);
-    const result = await getAllPersons();
-
+    const result = await getAllPersons(red);
     if (result.success) {
       setPersons(result.data);
       setError('');
     } else {
       setError(result.error);
     }
-
     setLoading(false);
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm('¿Eliminar esta persona?')) return;
+    const result = await deletePerson(red, id);
+    if (result.success) setPersons(prev => prev.filter(p => p.id !== id));
+  };
 
-    const result = await deletePerson(id);
-
+  const handleAbsence = async (id) => {
+    const result = await markAbsence(red, id);
     if (result.success) {
-      setPersons(prev => prev.filter(p => p.id !== id));
+      setPersons(prev => prev.map(p =>
+        p.id === id ? { ...p, ausencias: (p.ausencias || 0) + 1 } : p
+      ));
     }
   };
 
-  const handleEdit = (person) => {
-    onEdit(person);
+  const handleResetAbsences = async (id) => {
+    if (!window.confirm('¿Reiniciar el contador de ausencias?')) return;
+    const result = await resetAbsences(red, id);
+    if (result.success) {
+      setPersons(prev => prev.map(p =>
+        p.id === id ? { ...p, ausencias: 0 } : p
+      ));
+    }
   };
 
   const filteredPersons = useMemo(() => {
@@ -42,78 +59,67 @@ const PersonList = ({ refresh, onEdit }) => {
       person.apellido?.toLowerCase().includes(search.toLowerCase()) ||
       person.email?.toLowerCase().includes(search.toLowerCase()) ||
       person.telefono?.toLowerCase().includes(search.toLowerCase()) ||
-      person.edad?.toLowerCase().includes(search.toLowerCase()) ||
-      person.fechaNacimiento?.toLowerCase().includes(search.toLowerCase())
+      person.aCargoDe?.toLowerCase().includes(search.toLowerCase()) ||
+      String(person.edad)?.includes(search)
     );
   }, [search, persons]);
 
-  const getBirthdaysToday = () => {
-    const today = new Date();
-    const todayMonth = today.getMonth();
-    const todayDay = today.getDate();
-
-    return persons.filter(person => {
-      if (!person.fechaNacimiento) return false;
-
-      const birthDate = new Date(person.fechaNacimiento);
-      return (
-        birthDate.getMonth() === todayMonth &&
-        birthDate.getDate() === todayDay
-      );
-    });
+  const getBirthdayLabel = (person) => {
+    if (person.mesCumple && person.diaCumple) {
+      return { mes: parseInt(person.mesCumple), dia: parseInt(person.diaCumple) };
+    }
+    if (person.fechaNacimiento) {
+      const parts = person.fechaNacimiento.split('-');
+      return { mes: parseInt(parts[1]), dia: parseInt(parts[2]) };
+    }
+    return null;
   };
 
-  const birthdaysToday = getBirthdaysToday();
+  const birthdaysToday = useMemo(() => {
+    const today = new Date();
+    return persons.filter(p => {
+      const b = getBirthdayLabel(p);
+      if (!b) return false;
+      return b.mes === today.getMonth() + 1 && b.dia === today.getDate();
+    });
+  }, [persons]);
 
   const birthdaysThisWeek = useMemo(() => {
     const today = new Date();
-
-    // Obtener lunes de esta semana
-    const firstDayOfWeek = new Date(today);
-    const day = today.getDay(); // 0 domingo, 1 lunes...
+    const day = today.getDay();
     const diffToMonday = day === 0 ? -6 : 1 - day;
-    firstDayOfWeek.setDate(today.getDate() + diffToMonday);
+    const monday = new Date(today);
+    monday.setDate(today.getDate() + diffToMonday);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
 
-    // Obtener domingo de esta semana
-    const lastDayOfWeek = new Date(firstDayOfWeek);
-    lastDayOfWeek.setDate(firstDayOfWeek.getDate() + 6);
-
-    return persons.filter(person => {
-      if (!person.fechaNacimiento) return false;
-
-      const birthDate = new Date(person.fechaNacimiento);
-
-      // Crear fecha de cumpleaños en el año actual
-      const birthdayThisYear = new Date(
-        today.getFullYear(),
-        birthDate.getMonth(),
-        birthDate.getDate()
-      );
-
-      return (
-        birthdayThisYear >= firstDayOfWeek &&
-        birthdayThisYear <= lastDayOfWeek
-      );
+    return persons.filter(p => {
+      const b = getBirthdayLabel(p);
+      if (!b) return false;
+      const thisYear = new Date(today.getFullYear(), b.mes - 1, b.dia);
+      return thisYear >= monday && thisYear <= sunday;
     });
-
   }, [persons]);
+
+  const personasAusentes = useMemo(() =>
+    persons.filter(p => (p.ausencias || 0) >= AUSENCIAS_ALERTA)
+  , [persons]);
 
   useEffect(() => {
     loadPersons();
-  }, [refresh]);
+  }, [refresh, red]);
 
-  if (loading) return <p>Cargando...</p>;
-  if (error) return <p>{error}</p>;
+  if (loading) return <p className="loading">Cargando...</p>;
+  if (error) return <p className="error-message">{error}</p>;
 
   return (
     <div>
-
       <div className="form-group">
         <input
           type="text"
-          placeholder="Buscar persona..."
+          placeholder="Buscar por nombre, teléfono, a cargo de..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={e => setSearch(e.target.value)}
           className="search-input"
         />
       </div>
@@ -122,20 +128,60 @@ const PersonList = ({ refresh, onEdit }) => {
         Mostrando {filteredPersons.length} de {persons.length} personas
       </p>
 
+      {/* Alerta de ausencias */}
+      {personasAusentes.length > 0 && (
+        <div className="ausentes-alert">
+          <button
+            className="ausentes-alert-header"
+            onClick={() => setAlertOpen(o => !o)}
+          >
+            <span>📵 {personasAusentes.length} persona{personasAusentes.length > 1 ? 's' : ''} con {AUSENCIAS_ALERTA}+ ausencias — ¡Llámalas!</span>
+            <span className="alert-toggle">{alertOpen ? '▲' : '▼'}</span>
+          </button>
+          {alertOpen && (
+            <div className="ausentes-list">
+              {personasAusentes.map(p => (
+                <div key={p.id} className="ausente-item">
+                  <div className="ausente-info">
+                    <span className="ausente-nombre">{p.nombre} {p.apellido}</span>
+                    {p.aCargoDe && <span className="ausente-cargo">A cargo de: {p.aCargoDe}</span>}
+                  </div>
+                  <div className="ausente-right">
+                    <span className="ausente-count">{p.ausencias} aus.</span>
+                    {p.telefono && (
+                      <a className="ausente-tel" href={`tel:${p.telefono}`}>
+                        📱 {p.telefono}
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Cumpleaños hoy */}
+      {birthdaysToday.length > 0 && (
+        <p className="birthday-counter">
+          🎂 Cumpleaños HOY: {birthdaysToday.map(p => p.nombre).join(', ')}
+        </p>
+      )}
+
+      {/* Cumpleaños semana */}
       <p className="birthday-counter">
         🎂 Cumpleaños esta semana: {birthdaysThisWeek.length}
       </p>
 
       {birthdaysThisWeek.length > 0 && (
         <div className="birthday-box">
-          <h4  className='nameBirthday'> 🎉 Cumpleaños de esta semana:</h4>
+          <h4 className="nameBirthday">🎉 Cumpleaños de esta semana:</h4>
           {birthdaysThisWeek.map(p => {
-            const birthDate = new Date(p.fechaNacimiento);
-            const age = new Date().getFullYear() - birthDate.getFullYear();
-
+            const b = getBirthdayLabel(p);
+            const mesLabel = b ? MESES[b.mes] : '';
             return (
-              <p className='nameBirthday' key={p.id}>
-                {p.nombre} {p.apellido} ({age} años)
+              <p className="nameBirthday" key={p.id}>
+                {p.nombre} {p.apellido} — {b?.dia} de {mesLabel}
               </p>
             );
           })}
@@ -148,11 +194,12 @@ const PersonList = ({ refresh, onEdit }) => {
             key={person.id}
             person={person}
             onDelete={() => handleDelete(person.id)}
-            onEdit={() => handleEdit(person)}
+            onEdit={() => onEdit(person)}
+            onAbsence={handleAbsence}
+            onResetAbsences={handleResetAbsences}
           />
         ))}
       </div>
-
     </div>
   );
 };

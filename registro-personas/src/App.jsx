@@ -1,58 +1,45 @@
-import { useState } from 'react';
-import RegisterForm from './components/RegisterForm';
-import PersonList from './components/PersonList';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import Lobby from './pages/Lobby';
+import LoginPage from './pages/LoginPage';
+import NetworkApp from './pages/NetworkApp';
+import MigrationPage from './pages/MigrationPage';
 import './App.css';
 
-function App() {
-  const [selectedPerson, setSelectedPerson] = useState(null);
-  const [refresh, setRefresh] = useState(false);
-  const [activeTab, setActiveTab] = useState('register');
+const ProtectedRoute = ({ red }) => {
+  const { isLoggedIn, loading } = useAuth();
+  if (loading) return <div className="loading">Cargando...</div>;
+  if (!isLoggedIn(red)) return <Navigate to={`/${red}/login`} replace />;
+  return <NetworkApp red={red} />;
+};
 
-  const handleEdit = (person) => {
-    setSelectedPerson(person);
-    setActiveTab('register');
-  };
-
-  const finishEdit = () => {
-    setSelectedPerson(null);
-     setRefresh(prev => !prev)
-  };
-
+function AppRoutes() {
   return (
-    <div className="app">
-      <header className="app-header">
-        <h1>📋 Registro de Personas XTREME</h1>
-      </header>
+    <Routes>
+      <Route path="/" element={<Lobby />} />
+      <Route path="/setup" element={<MigrationPage />} />
 
-      <nav className="tab-nav">
-        <button
-          className={`tab-button ${activeTab === 'register' ? 'active' : ''}`}
-          onClick={() => setActiveTab('register')}
-        >
-          ➕ Registrar
-        </button>
-        <button
-          className={`tab-button ${activeTab === 'list' ? 'active' : ''}`}
-          onClick={() => setActiveTab('list')}
-        >
-          👥 Consultar
-        </button>
-      </nav>
+      <Route path="/xtreme/login" element={<LoginPage red="xtreme" />} />
+      <Route path="/xtreme" element={<ProtectedRoute red="xtreme" />} />
 
-      <main className="app-content">
-        {activeTab === 'register' ? (
-          <RegisterForm
-            selectedPerson={selectedPerson}
-            onFinish={finishEdit}
-          />
-        ) : (
-          <PersonList
-            refresh={refresh}
-            onEdit={handleEdit}
-          />
-        )}
-      </main>
-    </div>
+      <Route path="/parejas/login" element={<LoginPage red="parejas" />} />
+      <Route path="/parejas" element={<ProtectedRoute red="parejas" />} />
+
+      <Route path="/360/login" element={<LoginPage red="360" />} />
+      <Route path="/360" element={<ProtectedRoute red="360" />} />
+
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
 

@@ -1,4 +1,30 @@
-const PersonCard = ({ person, onDelete, onEdit }) => {
+const MESES = [
+  '','Enero','Febrero','Marzo','Abril','Mayo','Junio',
+  'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'
+];
+
+const formatCumple = (person) => {
+  if (person.mesCumple && person.diaCumple) {
+    return `${person.diaCumple} de ${MESES[parseInt(person.mesCumple)]}`;
+  }
+  if (person.fechaNacimiento) {
+    const parts = person.fechaNacimiento.split('-');
+    const mes = parseInt(parts[1]);
+    const dia = parseInt(parts[2]);
+    return `${dia} de ${MESES[mes]}`;
+  }
+  return 'Sin fecha';
+};
+
+const getAusenciasConfig = (n) => {
+  if (n === 0) return { label: 'Sin ausencias', cls: 'ausencias-ok' };
+  if (n <= 2)  return { label: `${n} ausencia${n > 1 ? 's' : ''}`, cls: 'ausencias-warn' };
+  return { label: `${n} ausencias`, cls: 'ausencias-danger' };
+};
+
+const PersonCard = ({ person, onDelete, onEdit, onAbsence, onResetAbsences }) => {
+  const ausencias = person.ausencias || 0;
+  const { label, cls } = getAusenciasConfig(ausencias);
 
   return (
     <div className="person-card">
@@ -8,38 +34,29 @@ const PersonCard = ({ person, onDelete, onEdit }) => {
       </div>
 
       <div className="person-details">
-        <p>📧 {person.email}</p>
+        {person.email ? <p>📧 {person.email}</p> : null}
         <p>📱 {person.telefono}</p>
-        <p>
-          🎂 {person.fechaNacimiento
-            ? (() => {
-              const [year, month, day] = person.fechaNacimiento.split('-');
-              const date = new Date(year, month - 1, day); // 👈 local, sin UTC
+        <p>🎂 {formatCumple(person)}</p>
+        {person.aCargoDe && (
+          <p className="a-cargo">👤 A cargo de: <strong>{person.aCargoDe}</strong></p>
+        )}
+      </div>
 
-              return date.toLocaleDateString('es-CO', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric'
-              });
-            })()
-            : 'Sin fecha'}
-        </p>
+      <div className="ausencias-row">
+        <span className={`ausencias-badge ${cls}`}>{label}</span>
+        <button className="btn-ausencia" onClick={() => onAbsence(person.id)} title="Registrar ausencia">
+          + Ausencia
+        </button>
+        {ausencias > 0 && (
+          <button className="btn-reset-ausencias" onClick={() => onResetAbsences(person.id)} title="Reiniciar contador">
+            ↺
+          </button>
+        )}
       </div>
 
       <div className="card-actions">
-        <button
-          className="btn-edit"
-          onClick={() => onEdit(person)}
-        >
-          ✏️ Editar
-        </button>
-
-        <button
-          className="btn-delete"
-          onClick={() => onDelete(person.id)}
-        >
-          🗑️ Eliminar
-        </button>
+        <button className="btn-edit" onClick={() => onEdit(person)}>✏️ Editar</button>
+        <button className="btn-delete" onClick={() => onDelete(person.id)}>🗑️ Eliminar</button>
       </div>
     </div>
   );
