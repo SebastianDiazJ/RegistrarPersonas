@@ -14,6 +14,7 @@ const PersonList = ({ red, refresh, onEdit }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
+  const [filtroCargo, setFiltroCargo] = useState('');
   const [alertOpen, setAlertOpen] = useState(true);
 
   const loadPersons = async () => {
@@ -53,16 +54,30 @@ const PersonList = ({ red, refresh, onEdit }) => {
     }
   };
 
+  const opcionesCargo = useMemo(() => {
+    const nombres = persons
+      .map(p => p.aCargoDe?.trim())
+      .filter(Boolean);
+    return [...new Set(nombres)].sort();
+  }, [persons]);
+
   const filteredPersons = useMemo(() => {
-    return persons.filter(person =>
-      person.nombre?.toLowerCase().includes(search.toLowerCase()) ||
-      person.apellido?.toLowerCase().includes(search.toLowerCase()) ||
-      person.email?.toLowerCase().includes(search.toLowerCase()) ||
-      person.telefono?.toLowerCase().includes(search.toLowerCase()) ||
-      person.aCargoDe?.toLowerCase().includes(search.toLowerCase()) ||
-      String(person.edad)?.includes(search)
-    );
-  }, [search, persons]);
+    return persons.filter(person => {
+      const matchSearch =
+        !search ||
+        person.nombre?.toLowerCase().includes(search.toLowerCase()) ||
+        person.apellido?.toLowerCase().includes(search.toLowerCase()) ||
+        person.email?.toLowerCase().includes(search.toLowerCase()) ||
+        person.telefono?.toLowerCase().includes(search.toLowerCase()) ||
+        String(person.edad)?.includes(search);
+
+      const matchCargo =
+        !filtroCargo ||
+        person.aCargoDe?.toLowerCase() === filtroCargo.toLowerCase();
+
+      return matchSearch && matchCargo;
+    });
+  }, [search, filtroCargo, persons]);
 
   const getBirthdayLabel = (person) => {
     if (person.mesCumple && person.diaCumple) {
@@ -117,12 +132,27 @@ const PersonList = ({ red, refresh, onEdit }) => {
       <div className="form-group">
         <input
           type="text"
-          placeholder="Buscar por nombre, teléfono, a cargo de..."
+          placeholder="Buscar por nombre, teléfono..."
           value={search}
           onChange={e => setSearch(e.target.value)}
           className="search-input"
         />
       </div>
+
+      {opcionesCargo.length > 0 && (
+        <div className="form-group">
+          <select
+            className="filtro-cargo-select"
+            value={filtroCargo}
+            onChange={e => setFiltroCargo(e.target.value)}
+          >
+            <option value="">👤 Todos — A cargo de</option>
+            {opcionesCargo.map(nombre => (
+              <option key={nombre} value={nombre}>{nombre}</option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <p className="person-counter">
         Mostrando {filteredPersons.length} de {persons.length} personas

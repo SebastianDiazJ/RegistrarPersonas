@@ -1063,3 +1063,24 @@ html { scroll-behavior: smooth; }
 }
 
 .ausente-tel:hover { color: #742a2a; }
+
+/* ─── Filtro A cargo de ────────────────────────────────── */
+.filtro-cargo-select {
+  width: 100%;
+  padding: 0.9rem 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 1rem;
+  background: #f7fafc;
+  color: #2d3748;
+  transition: var(--transition);
+  cursor: pointer;
+  appearance: auto;
+}
+
+.filtro-cargo-select:focus {
+  outline: none;
+  border-color: var(--c1);
+  background: white;
+  box-shadow: 0 0 0 4px rgba(102,126,234,0.1);
+}
