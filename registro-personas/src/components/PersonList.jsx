@@ -55,10 +55,18 @@ const PersonList = ({ red, refresh, onEdit }) => {
   };
 
   const opcionesCargo = useMemo(() => {
-    const nombres = persons
-      .map(p => p.aCargoDe?.trim())
-      .filter(Boolean);
-    return [...new Set(nombres)].sort();
+    const seen = new Set();
+    const nombres = [];
+    persons.forEach(p => {
+      const raw = p.aCargoDe?.trim();
+      if (!raw) return;
+      const key = raw.toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        nombres.push(raw);
+      }
+    });
+    return nombres.sort();
   }, [persons]);
 
   const filteredPersons = useMemo(() => {
@@ -73,7 +81,7 @@ const PersonList = ({ red, refresh, onEdit }) => {
 
       const matchCargo =
         !filtroCargo ||
-        person.aCargoDe?.toLowerCase() === filtroCargo.toLowerCase();
+        person.aCargoDe?.trim().toLowerCase() === filtroCargo.toLowerCase();
 
       return matchSearch && matchCargo;
     });
