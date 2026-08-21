@@ -57,7 +57,12 @@ const Lobby = () => {
         ))}
       </div>
 
-      <p className="lobby-footer">Sistema de Registro — Iglesia</p>
+      <div className="lobby-footer-row">
+        <p className="lobby-footer">Sistema de Registro — Iglesia</p>
+        <button className="lobby-admin-link" onClick={() => navigate('/consolidacion/login')}>
+          ⚙️ Consolidación
+        </button>
+      </div>
     </div>
   );
 };

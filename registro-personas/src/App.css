@@ -1084,3 +1084,459 @@ html { scroll-behavior: smooth; }
   background: white;
   box-shadow: 0 0 0 4px rgba(102,126,234,0.1);
 }
+
+/* ═══════════════════════════════════════════════════════════
+   LOBBY — Admin link
+═══════════════════════════════════════════════════════════ */
+.lobby-footer-row {
+  margin-top: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.lobby-admin-link {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.4);
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 20px;
+  padding: 0.4rem 1rem;
+  cursor: pointer;
+  transition: var(--transition);
+  letter-spacing: 0.3px;
+}
+
+.lobby-admin-link:hover {
+  background: rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.75);
+  border-color: rgba(255,255,255,0.25);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CONSOLIDACIÓN — Login
+═══════════════════════════════════════════════════════════ */
+.consol-login-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  animation: fadeIn 0.4s ease;
+}
+
+.consol-btn-login {
+  background: linear-gradient(135deg, #302b63, #24243e) !important;
+  box-shadow: 0 4px 15px rgba(48,43,99,0.5) !important;
+}
+
+.consol-btn-login:hover:not(:disabled) {
+  box-shadow: 0 6px 22px rgba(48,43,99,0.65) !important;
+  transform: translateY(-2px) !important;
+}
+
+.consol-btn-directo {
+  border-color: #302b63 !important;
+  color: #302b63 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CONSOLIDACIÓN — Panel
+═══════════════════════════════════════════════════════════ */
+.consol-panel {
+  min-height: 100vh;
+  background: #f0f2f5;
+  display: flex;
+  flex-direction: column;
+}
+
+.consol-header {
+  background: linear-gradient(135deg, #0f0c29 0%, #302b63 100%);
+  color: white;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.consol-header-left { display: flex; flex-direction: column; gap: 0.1rem; }
+.consol-header-right { display: flex; gap: 0.5rem; align-items: center; }
+
+.consol-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  margin: 0;
+  color: #fff;
+}
+
+.consol-subtitle {
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.5);
+  margin: 0;
+}
+
+.consol-body {
+  flex: 1;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 860px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* ─── Stats Row ─────────────────────────────────────────── */
+.consol-stats-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  animation: fadeInDown 0.5s ease;
+}
+
+.consol-total-card {
+  background: linear-gradient(135deg, #0f0c29, #302b63);
+  border-radius: 16px;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 120px;
+  flex: 1;
+  box-shadow: 0 4px 20px rgba(15,12,41,0.35);
+}
+
+.consol-total-num {
+  font-size: 2.6rem;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1;
+}
+
+.consol-total-label {
+  font-size: 0.72rem;
+  color: rgba(255,255,255,0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-top: 0.3rem;
+}
+
+.consol-net-stat {
+  background: white;
+  border-radius: 16px;
+  padding: 1.25rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  flex: 1;
+  min-width: 100px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--card-shadow);
+}
+
+.consol-net-stat::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: linear-gradient(135deg, var(--c1), var(--c2));
+}
+
+.consol-net-emoji { font-size: 1.4rem; }
+
+.consol-net-count-big {
+  font-size: 2rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--c1), var(--c2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1.1;
+}
+
+.consol-net-name {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #a0aec0;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+/* ─── Register Card ─────────────────────────────────────── */
+.consol-register-card {
+  background: white;
+  border-radius: 20px;
+  padding: 1.75rem;
+  box-shadow: var(--card-shadow);
+  animation: fadeInUp 0.5s ease 0.1s both;
+}
+
+.consol-card-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #1a1a2e;
+  margin-bottom: 1.25rem;
+}
+
+.consol-red-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.consol-red-tab {
+  padding: 0.55rem 1.15rem;
+  border-radius: 30px;
+  border: 2px solid #e2e8f0;
+  background: transparent;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #4a5568;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.consol-red-tab.active {
+  background: linear-gradient(135deg, var(--c1), var(--c2));
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.18);
+  transform: translateY(-1px);
+}
+
+.consol-red-tab:not(.active):hover {
+  border-color: var(--c1);
+  color: var(--c1);
+}
+
+.consol-fields-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 1rem;
+}
+
+.consol-feedback-ok {
+  background: #f0fff4;
+  border: 1px solid #9ae6b4;
+  color: #276749;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: center;
+  margin: 0.5rem 0;
+  animation: fadeIn 0.3s ease;
+}
+
+/* ─── Tabs principales (Registrar / Ver personas) ───────── */
+.consol-main-tabs {
+  display: flex;
+  background: white;
+  border-radius: 14px;
+  padding: 0.4rem;
+  gap: 0.4rem;
+  box-shadow: var(--card-shadow);
+}
+
+.consol-main-tab {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: none;
+  background: transparent;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #718096;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.consol-main-tab.active {
+  background: linear-gradient(135deg, #0f0c29, #302b63);
+  color: white;
+  box-shadow: 0 3px 10px rgba(15,12,41,0.25);
+}
+
+.consol-main-tab:not(.active):hover {
+  background: #f0f2f5;
+  color: #2d3748;
+}
+
+/* ─── Tab badge (conteo en selector de red) ─────────────── */
+.consol-tab-badge {
+  display: inline-block;
+  background: rgba(255,255,255,0.25);
+  border-radius: 10px;
+  padding: 0.05rem 0.45rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  margin-left: 0.3rem;
+  line-height: 1.4;
+}
+
+.consol-red-tab:not(.active) .consol-tab-badge {
+  background: #e2e8f0;
+  color: #4a5568;
+}
+
+/* ─── Vista Consultar ───────────────────────────────────── */
+.consol-consulta-card {
+  background: white;
+  border-radius: 20px;
+  padding: 1.75rem;
+  box-shadow: var(--card-shadow);
+  animation: fadeInUp 0.4s ease;
+}
+
+.consol-lista-meta {
+  font-size: 0.85rem;
+  color: #718096;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.consol-empty {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  color: #a0aec0;
+  font-size: 0.95rem;
+}
+
+/* ─── Lista de personas ─────────────────────────────────── */
+.consol-personas-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.consol-persona-row {
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: var(--transition);
+}
+
+.consol-persona-row:hover {
+  border-color: var(--c1);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+}
+
+.consol-persona-summary {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  gap: 0.75rem;
+  text-align: left;
+  transition: background 0.2s;
+}
+
+.consol-persona-summary:hover {
+  background: #f7fafc;
+}
+
+.consol-persona-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.consol-persona-nombre {
+  font-weight: 700;
+  color: #2d3748;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.consol-persona-cargo {
+  font-size: 0.78rem;
+  color: #718096;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.consol-persona-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.consol-expand-icon {
+  font-size: 0.65rem;
+  color: #a0aec0;
+}
+
+.consol-ausencia-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: 10px;
+}
+
+.consol-badge-ok     { background: #e6ffed; color: #276749; }
+.consol-badge-warn   { background: #fffbeb; color: #b7791f; }
+.consol-badge-danger { background: #fff5f5; color: #c53030; }
+
+/* ─── Detalle expandido ─────────────────────────────────── */
+.consol-persona-detail {
+  border-top: 1.5px solid #e2e8f0;
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  background: #f7fafc;
+  animation: fadeIn 0.2s ease;
+}
+
+.consol-detail-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+  color: #4a5568;
+  padding: 0.3rem 0.5rem;
+  border-radius: 8px;
+  background: white;
+}
+
+.consol-detail-row.consol-badge-warn   { background: #fffbeb; }
+.consol-detail-row.consol-badge-danger { background: #fff5f5; }
+
+.consol-detail-link {
+  color: var(--c1);
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s;
+}
+
+.consol-detail-link:hover { text-decoration: underline; }
+
+/* ─── Responsive ────────────────────────────────────────── */
+@media (max-width: 520px) {
+  .consol-fields-grid   { grid-template-columns: 1fr; }
+  .consol-stats-row     { flex-direction: column; }
+  .consol-register-card { padding: 1.25rem; }
+  .consol-consulta-card { padding: 1.25rem; }
+  .consol-main-tab      { font-size: 0.85rem; padding: 0.65rem 0.5rem; }
+}

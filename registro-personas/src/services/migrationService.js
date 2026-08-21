@@ -1,4 +1,4 @@
-import { collection, getDocs, addDoc, setDoc, doc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, setDoc, getDoc, doc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
 const REDES_CONFIG = [
@@ -52,6 +52,20 @@ export const migrateXtremeData = async () => {
     }
 
     return { success: true, count: personas.length };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+};
+
+export const initializeAdmin = async () => {
+  try {
+    const ref = doc(db, 'config', 'admin');
+    const existing = await getDoc(ref);
+    if (existing.exists()) {
+      return { success: true, skipped: true };
+    }
+    await setDoc(ref, { email: 'admin@iglesia.com', password: 'Admin@2026' });
+    return { success: true, skipped: false };
   } catch (error) {
     return { success: false, error: error.message };
   }

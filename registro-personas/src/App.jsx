@@ -4,6 +4,8 @@ import Lobby from './pages/Lobby';
 import LoginPage from './pages/LoginPage';
 import NetworkApp from './pages/NetworkApp';
 import MigrationPage from './pages/MigrationPage';
+import ConsolidacionLogin from './pages/ConsolidacionLogin';
+import ConsolidacionPanel from './pages/ConsolidacionPanel';
 import './App.css';
 
 const ProtectedRoute = ({ red }) => {
@@ -11,6 +13,13 @@ const ProtectedRoute = ({ red }) => {
   if (loading) return <div className="loading">Cargando...</div>;
   if (!isLoggedIn(red)) return <Navigate to={`/${red}/login`} replace />;
   return <NetworkApp red={red} />;
+};
+
+const AdminProtectedRoute = () => {
+  const { isAdminLoggedIn, loading } = useAuth();
+  if (loading) return <div className="loading">Cargando...</div>;
+  if (!isAdminLoggedIn()) return <Navigate to="/consolidacion/login" replace />;
+  return <ConsolidacionPanel />;
 };
 
 function AppRoutes() {
@@ -27,6 +36,9 @@ function AppRoutes() {
 
       <Route path="/360/login" element={<LoginPage red="360" />} />
       <Route path="/360" element={<ProtectedRoute red="360" />} />
+
+      <Route path="/consolidacion/login" element={<ConsolidacionLogin />} />
+      <Route path="/consolidacion" element={<AdminProtectedRoute />} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

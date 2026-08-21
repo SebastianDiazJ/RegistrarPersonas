@@ -45,8 +45,36 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('church_sessions', JSON.stringify(newSessions));
   };
 
+  const loginAdmin = async (email, password) => {
+    try {
+      const docRef = doc(db, 'config', 'admin');
+      const docSnap = await getDoc(docRef);
+      if (!docSnap.exists()) {
+        return { success: false, error: 'Admin no configurado. Ve a /setup para inicializar.' };
+      }
+      const data = docSnap.data();
+      if (data.email === email && data.password === password) {
+        const newSessions = { ...sessions, admin: true };
+        setSessions(newSessions);
+        localStorage.setItem('church_sessions', JSON.stringify(newSessions));
+        return { success: true };
+      }
+      return { success: false, error: 'Correo o contraseña incorrectos' };
+    } catch {
+      return { success: false, error: 'Error de conexión. Intenta de nuevo.' };
+    }
+  };
+
+  const isAdminLoggedIn = () => sessions['admin'] === true;
+
+  const logoutAdmin = () => {
+    const newSessions = { ...sessions, admin: false };
+    setSessions(newSessions);
+    localStorage.setItem('church_sessions', JSON.stringify(newSessions));
+  };
+
   return (
-    <AuthContext.Provider value={{ sessions, isLoggedIn, login, logout, loading }}>
+    <AuthContext.Provider value={{ sessions, isLoggedIn, login, logout, loading, loginAdmin, isAdminLoggedIn, logoutAdmin }}>
       {children}
     </AuthContext.Provider>
   );
