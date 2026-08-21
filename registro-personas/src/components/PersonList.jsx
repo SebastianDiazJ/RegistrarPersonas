@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
-import { getAllPersons, deletePerson, markAbsence, resetAbsences } from '../services/personService';
+import { getAllPersons, deletePerson, markAbsence, resetAbsences, updatePerson } from '../services/personService';
+import { getCallAlertStatus, getPersonasNeedingCall } from '../services/callAlertService';
 import PersonCard from './PersonCard';
 
 const MESES = [
@@ -16,6 +17,7 @@ const PersonList = ({ red, refresh, onEdit }) => {
   const [search, setSearch] = useState('');
   const [filtroCargo, setFiltroCargo] = useState('');
   const [alertOpen, setAlertOpen] = useState(true);
+  const [callAlertOpen, setCallAlertOpen] = useState(true);
 
   const loadPersons = async () => {
     setLoading(true);
@@ -50,6 +52,18 @@ const PersonList = ({ red, refresh, onEdit }) => {
     if (result.success) {
       setPersons(prev => prev.map(p =>
         p.id === id ? { ...p, ausencias: 0 } : p
+      ));
+    }
+  };
+
+  const handleMarkCalled = async (id) => {
+    const result = await updatePerson(red, id, {
+      lastCallDate: new Date().toISOString(),
+      callConfirmed: true
+    });
+    if (result.success) {
+      setPersons(prev => prev.map(p =>
+        p.id === id ? { ...p, lastCallDate: new Date().toISOString(), callConfirmed: true } : p
       ));
     }
   };
@@ -128,6 +142,10 @@ const PersonList = ({ red, refresh, onEdit }) => {
     persons.filter(p => (p.ausencias || 0) >= AUSENCIAS_ALERTA)
   , [persons]);
 
+  const personasNecesitanLlamada = useMemo(() =>
+    getPersonasNeedingCall(persons)
+  , [persons]);
+
   useEffect(() => {
     loadPersons();
   }, [refresh, red]);
@@ -165,6 +183,47 @@ const PersonList = ({ red, refresh, onEdit }) => {
       <p className="person-counter">
         Mostrando {filteredPersons.length} de {persons.length} personas
       </p>
+
+      {/* Alerta de llamadas (48 hrs) */}
+      {personasNecesitanLlamada.length > 0 && (
+        <div className="call-alert">
+          <button
+            className="call-alert-header"
+            onClick={() => setCallAlertOpen(o => !o)}
+          >
+            <span>📞 {personasNecesitanLlamada.length} persona{personasNecesitanLlamada.length > 1 ? 's' : ''} necesita contacto (48+ hrs) — ¡Actúa!</span>
+            <span className="alert-toggle">{callAlertOpen ? '▲' : '▼'}</span>
+          </button>
+          {callAlertOpen && (
+            <div className="call-alert-list">
+              {personasNecesitanLlamada.map(p => (
+                <div key={p.id} className="call-alert-item">
+                  <div className="call-alert-info">
+                    <span className="call-alert-nombre">{p.nombre} {p.apellido}</span>
+                    {p.aCargoDe && <span className="call-alert-cargo">A cargo de: {p.aCargoDe}</span>}
+                    {p.lastCallDate && (
+                      <span className="call-alert-date">Última llamada: {new Date(p.lastCallDate).toLocaleDateString('es-CO')}</span>
+                    )}
+                  </div>
+                  <div className="call-alert-actions">
+                    {p.telefono && (
+                      <a className="btn-llamar" href={`tel:${p.telefono}`}>
+                        📱 Llamar
+                      </a>
+                    )}
+                    <button
+                      className="btn-confirmar-llamada"
+                      onClick={() => handleMarkCalled(p.id)}
+                    >
+                      ✓ Ya llamé
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Alerta de ausencias */}
       {personasAusentes.length > 0 && (
@@ -235,6 +294,7 @@ const PersonList = ({ red, refresh, onEdit }) => {
             onEdit={() => onEdit(person)}
             onAbsence={handleAbsence}
             onResetAbsences={handleResetAbsences}
+            onMarkCalled={handleMarkCalled}
           />
         ))}
       </div>

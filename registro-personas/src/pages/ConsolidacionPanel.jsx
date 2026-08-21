@@ -2,16 +2,18 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getCountByRed, addPerson, getAllPersons } from '../services/personService';
+import PersonasTable from '../components/PersonasTable';
 
 const REDES = [
   { id: 'xtreme',  nombre: 'XTREME',  emoji: '🔥', color1: '#667eea', color2: '#764ba2' },
   { id: 'parejas', nombre: 'PAREJAS', emoji: '💑', color1: '#f093fb', color2: '#f5576c' },
   { id: '360',     nombre: '360',     emoji: '🌐', color1: '#4facfe', color2: '#00f2fe' },
+  { id: 'senior',  nombre: 'SENIOR',  emoji: '👴', color1: '#fa709a', color2: '#fee140' }
 ];
 
 const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
-const EMPTY_FORM = { nombre: '', apellido: '', telefono: '', aCargoDe: '' };
+const EMPTY_FORM = { nombre: '', apellido: '', telefono: '', aCargoDe: '', email: '', prayerRequest: '' };
 
 const ConsolidacionPanel = () => {
   const navigate = useNavigate();
@@ -21,7 +23,7 @@ const ConsolidacionPanel = () => {
   const [activeTab, setActiveTab] = useState('registrar');
 
   // stats
-  const [counts, setCounts]           = useState({ xtreme: 0, parejas: 0, '360': 0 });
+  const [counts, setCounts]           = useState({ xtreme: 0, parejas: 0, '360': 0, senior: 0 });
   const [loadingCounts, setLoadingCounts] = useState(true);
 
   // registro
@@ -71,7 +73,11 @@ const ConsolidacionPanel = () => {
       apellido:  form.apellido.trim(),
       telefono:  form.telefono.trim(),
       aCargoDe:  form.aCargoDe.trim(),
-      email: '', edad: '', mesCumple: '', diaCumple: '', ausencias: 0,
+      email:     form.email.trim(),
+      prayerRequest: form.prayerRequest.trim(),
+      edad: '', mesCumple: '', diaCumple: '', ausencias: 0,
+      lastCallDate: null,
+      callConfirmed: false
     });
     if (result.success) {
       const redNombre = REDES.find(r => r.id === selectedRed).nombre;
@@ -97,7 +103,8 @@ const ConsolidacionPanel = () => {
       `${p.nombre} ${p.apellido}`.toLowerCase().includes(q) ||
       (p.telefono  || '').includes(q) ||
       (p.email     || '').toLowerCase().includes(q) ||
-      (p.aCargoDe  || '').toLowerCase().includes(q)
+      (p.aCargoDe  || '').toLowerCase().includes(q) ||
+      (p.prayerRequest || '').toLowerCase().includes(q)
     );
   }, [personas, busqueda]);
 
@@ -191,8 +198,16 @@ const ConsolidacionPanel = () => {
                   <input value={form.telefono} onChange={handleChange('telefono')} placeholder="+57 300 000 0000" type="tel" required autoComplete="off" />
                 </div>
                 <div className="form-group">
+                  <label>Email</label>
+                  <input value={form.email} onChange={handleChange('email')} placeholder="correo@ejemplo.com" type="email" autoComplete="off" />
+                </div>
+                <div className="form-group">
                   <label>A cargo de</label>
                   <input value={form.aCargoDe} onChange={handleChange('aCargoDe')} placeholder="Líder responsable" autoComplete="off" />
+                </div>
+                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                  <label>Petición de oración</label>
+                  <textarea value={form.prayerRequest} onChange={handleChange('prayerRequest')} placeholder="Escribe una petición de oración (visible para todos los líderes)" rows="3" autoComplete="off" />
                 </div>
               </div>
 
@@ -230,39 +245,38 @@ const ConsolidacionPanel = () => {
               ))}
             </div>
 
-            {/* Buscador */}
-            <div className="form-group" style={{ marginBottom: '1rem' }}>
+            {/* Buscador mejorado */}
+            <div className="search-bar-container">
               <input
-                className="search-input"
+                className="search-input-modern"
                 style={{ '--c1': redConsultaConfig.color1 }}
+                type="text"
                 value={busqueda}
                 onChange={e => setBusqueda(e.target.value)}
-                placeholder="Buscar por nombre, teléfono, email o líder…"
+                placeholder="🔍 Buscar por nombre, teléfono, email, oración…"
               />
+              {busqueda && (
+                <button
+                  className="btn-clear-search"
+                  onClick={() => setBusqueda('')}
+                  title="Limpiar búsqueda"
+                >
+                  ✕
+                </button>
+              )}
             </div>
 
-            {/* Contador */}
-            {!loadingPersonas && (
-              <p className="consol-lista-meta">
-                {personasFiltradas.length === personas.length
-                  ? `${personas.length} persona${personas.length !== 1 ? 's' : ''} en ${redConsultaConfig.nombre}`
-                  : `${personasFiltradas.length} resultado${personasFiltradas.length !== 1 ? 's' : ''} de ${personas.length}`}
-              </p>
-            )}
-
-            {/* Lista */}
+            {/* Tabla moderna */}
             {loadingPersonas ? (
-              <div className="loading">Cargando personas…</div>
-            ) : personasFiltradas.length === 0 ? (
-              <div className="consol-empty">
-                {busqueda ? 'Sin resultados para esa búsqueda.' : 'No hay personas en esta red.'}
-              </div>
+              <div className="loading">⏳ Cargando personas…</div>
             ) : (
-              <div className="consol-personas-list">
-                {personasFiltradas.map(p => (
-                  <PersonaRow key={p.id} persona={p} redConfig={redConsultaConfig} />
-                ))}
-              </div>
+              <PersonasTable
+                personas={personas}
+                red={redConsulta}
+                redConfig={redConsultaConfig}
+                busqueda={busqueda}
+                onRefresh={() => loadPersonas(redConsulta)}
+              />
             )}
           </div>
         )}
@@ -318,6 +332,9 @@ const PersonaRow = ({ persona: p, redConfig }) => {
           {p.edad      && <DetailRow icon="🎂" text={`${p.edad} años`} />}
           {cumple      && <DetailRow icon="🎉" text={`Cumpleaños: ${cumple}`} />}
           {p.aCargoDe  && <DetailRow icon="👤" text={`Líder: ${p.aCargoDe}`} />}
+          {p.prayerRequest && (
+            <DetailRow icon="🙏" text={`Oración: ${p.prayerRequest}`} />
+          )}
           <DetailRow
             icon="📊"
             text={`Ausencias: ${ausencias}`}

@@ -1,3 +1,5 @@
+import { getCallAlertStatus } from '../services/callAlertService';
+
 const MESES = [
   '','Enero','Febrero','Marzo','Abril','Mayo','Junio',
   'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'
@@ -22,9 +24,10 @@ const getAusenciasConfig = (n) => {
   return { label: `${n} ausencias`, cls: 'ausencias-danger' };
 };
 
-const PersonCard = ({ person, onDelete, onEdit, onAbsence, onResetAbsences }) => {
+const PersonCard = ({ person, onDelete, onEdit, onAbsence, onResetAbsences, onMarkCalled }) => {
   const ausencias = person.ausencias || 0;
   const { label, cls } = getAusenciasConfig(ausencias);
+  const callStatus = getCallAlertStatus(person);
 
   return (
     <div className="person-card">
@@ -40,6 +43,12 @@ const PersonCard = ({ person, onDelete, onEdit, onAbsence, onResetAbsences }) =>
         {person.aCargoDe && (
           <p className="a-cargo">👤 A cargo de: <strong>{person.aCargoDe}</strong></p>
         )}
+        {person.prayerRequest && (
+          <p className="prayer-request">🙏 Oración: {person.prayerRequest}</p>
+        )}
+        {person.lastCallDate && (
+          <p className="call-date">📞 Última llamada: {new Date(person.lastCallDate).toLocaleDateString('es-CO')}</p>
+        )}
       </div>
 
       <div className="ausencias-row">
@@ -53,6 +62,25 @@ const PersonCard = ({ person, onDelete, onEdit, onAbsence, onResetAbsences }) =>
           </button>
         )}
       </div>
+
+      {onMarkCalled && (
+        <div className="call-status-row">
+          {callStatus.isAlert ? (
+            <span className="call-alert-badge">⚠️ Necesita contacto</span>
+          ) : person.lastCallDate ? (
+            <span className="call-ok-badge">✓ Al día</span>
+          ) : (
+            <span className="call-never-badge">❓ Nunca contactado</span>
+          )}
+          <button
+            className="btn-mark-called"
+            onClick={() => onMarkCalled(person.id)}
+            title="Marcar como contactado"
+          >
+            ✓ Ya llamé
+          </button>
+        </div>
+      )}
 
       <div className="card-actions">
         <button className="btn-edit" onClick={() => onEdit(person)}>✏️ Editar</button>

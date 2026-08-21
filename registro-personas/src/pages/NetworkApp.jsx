@@ -7,7 +7,8 @@ import { useAuth } from '../context/AuthContext';
 const REDES_CONFIG = {
   xtreme:  { nombre: 'XTREME',  emoji: '🔥', color1: '#667eea', color2: '#764ba2' },
   parejas: { nombre: 'PAREJAS', emoji: '💑', color1: '#f093fb', color2: '#f5576c' },
-  '360':   { nombre: '360',     emoji: '🌐', color1: '#4facfe', color2: '#00f2fe' }
+  '360':   { nombre: '360',     emoji: '🌐', color1: '#4facfe', color2: '#00f2fe' },
+  senior:  { nombre: 'SENIOR',  emoji: '👴', color1: '#fa709a', color2: '#fee140' }
 };
 
 const NetworkApp = ({ red }) => {

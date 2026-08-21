@@ -37,6 +37,9 @@ function AppRoutes() {
       <Route path="/360/login" element={<LoginPage red="360" />} />
       <Route path="/360" element={<ProtectedRoute red="360" />} />
 
+      <Route path="/senior/login" element={<LoginPage red="senior" />} />
+      <Route path="/senior" element={<ProtectedRoute red="senior" />} />
+
       <Route path="/consolidacion/login" element={<ConsolidacionLogin />} />
       <Route path="/consolidacion" element={<AdminProtectedRoute />} />
 

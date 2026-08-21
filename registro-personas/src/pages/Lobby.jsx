@@ -5,12 +5,13 @@ import { getCountByRed } from '../services/personService';
 const REDES = [
   { id: 'xtreme', nombre: 'XTREME', emoji: '🔥', color1: '#667eea', color2: '#764ba2' },
   { id: 'parejas', nombre: 'PAREJAS', emoji: '💑', color1: '#f093fb', color2: '#f5576c' },
-  { id: '360', nombre: '360', emoji: '🌐', color1: '#4facfe', color2: '#00f2fe' }
+  { id: '360', nombre: '360', emoji: '🌐', color1: '#4facfe', color2: '#00f2fe' },
+  { id: 'senior', nombre: 'SENIOR', emoji: '👴', color1: '#fa709a', color2: '#fee140' }
 ];
 
 const Lobby = () => {
   const navigate = useNavigate();
-  const [counts, setCounts] = useState({ xtreme: 0, parejas: 0, '360': 0 });
+  const [counts, setCounts] = useState({ xtreme: 0, parejas: 0, '360': 0, senior: 0 });
   const [loadingCounts, setLoadingCounts] = useState(true);
 
   useEffect(() => {
