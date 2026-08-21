@@ -33,32 +33,36 @@ const PersonCard = ({ person, onDelete, onEdit, onAbsence, onResetAbsences, onMa
     <div className="person-card">
       <div className="person-header">
         <h3>{person.nombre} {person.apellido}</h3>
-        <span className="person-age">{person.edad} años</span>
+        {person.edad ? <span className="person-age">{person.edad} anos</span> : null}
       </div>
 
       <div className="person-details">
-        {person.email ? <p>📧 {person.email}</p> : null}
-        <p>📱 {person.telefono}</p>
-        <p>🎂 {formatCumple(person)}</p>
+        {person.email && (
+          <p><span style={{ fontWeight: 600, color: 'var(--t2)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Email</span> {person.email}</p>
+        )}
+        {person.telefono && (
+          <p><span style={{ fontWeight: 600, color: 'var(--t2)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Tel</span> {person.telefono}</p>
+        )}
+        <p><span style={{ fontWeight: 600, color: 'var(--t2)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Cumple</span> {formatCumple(person)}</p>
         {person.aCargoDe && (
-          <p className="a-cargo">👤 A cargo de: <strong>{person.aCargoDe}</strong></p>
+          <p className="a-cargo">A cargo de: <strong>{person.aCargoDe}</strong></p>
         )}
         {person.prayerRequest && (
-          <p className="prayer-request">🙏 Oración: {person.prayerRequest}</p>
+          <p className="prayer-request">Oracion: {person.prayerRequest}</p>
         )}
         {person.lastCallDate && (
-          <p className="call-date">📞 Última llamada: {new Date(person.lastCallDate).toLocaleDateString('es-CO')}</p>
+          <p className="call-date">Ultima llamada: {new Date(person.lastCallDate).toLocaleDateString('es-CO')}</p>
         )}
       </div>
 
       <div className="ausencias-row">
         <span className={`ausencias-badge ${cls}`}>{label}</span>
-        <button className="btn-ausencia" onClick={() => onAbsence(person.id)} title="Registrar ausencia">
+        <button className="btn-ausencia" onClick={() => onAbsence(person.id)}>
           + Ausencia
         </button>
         {ausencias > 0 && (
-          <button className="btn-reset-ausencias" onClick={() => onResetAbsences(person.id)} title="Reiniciar contador">
-            ↺
+          <button className="btn-reset-ausencias" onClick={() => onResetAbsences(person.id)}>
+            Reiniciar
           </button>
         )}
       </div>
@@ -66,25 +70,24 @@ const PersonCard = ({ person, onDelete, onEdit, onAbsence, onResetAbsences, onMa
       {onMarkCalled && (
         <div className="call-status-row">
           {callStatus.isAlert ? (
-            <span className="call-alert-badge">⚠️ Necesita contacto</span>
+            <span className="call-alert-badge">Necesita contacto</span>
           ) : person.lastCallDate ? (
-            <span className="call-ok-badge">✓ Al día</span>
+            <span className="call-ok-badge">Al dia</span>
           ) : (
-            <span className="call-never-badge">❓ Nunca contactado</span>
+            <span className="call-never-badge">Nunca contactado</span>
           )}
           <button
             className="btn-mark-called"
             onClick={() => onMarkCalled(person.id)}
-            title="Marcar como contactado"
           >
-            ✓ Ya llamé
+            Ya llame
           </button>
         </div>
       )}
 
       <div className="card-actions">
-        <button className="btn-edit" onClick={() => onEdit(person)}>✏️ Editar</button>
-        <button className="btn-delete" onClick={() => onDelete(person.id)}>🗑️ Eliminar</button>
+        <button className="btn-edit" onClick={() => onEdit(person)}>Editar</button>
+        <button className="btn-delete" onClick={() => onDelete(person.id)}>Eliminar</button>
       </div>
     </div>
   );

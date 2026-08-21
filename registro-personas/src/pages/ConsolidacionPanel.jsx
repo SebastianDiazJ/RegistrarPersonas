@@ -5,10 +5,10 @@ import { getCountByRed, addPerson, getAllPersons } from '../services/personServi
 import PersonasTable from '../components/PersonasTable';
 
 const REDES = [
-  { id: 'xtreme',  nombre: 'XTREME',  emoji: '🔥', color1: '#667eea', color2: '#764ba2' },
-  { id: 'parejas', nombre: 'PAREJAS', emoji: '💑', color1: '#f093fb', color2: '#f5576c' },
-  { id: '360',     nombre: '360',     emoji: '🌐', color1: '#4facfe', color2: '#00f2fe' },
-  { id: 'senior',  nombre: 'SENIOR',  emoji: '👴', color1: '#fa709a', color2: '#fee140' }
+  { id: 'xtreme',  nombre: 'XTREME',  color: '#4338CA' },
+  { id: 'parejas', nombre: 'PAREJAS', color: '#BE185D' },
+  { id: '360',     nombre: '360',     color: '#0369A1' },
+  { id: 'senior',  nombre: 'SENIOR',  color: '#B45309' }
 ];
 
 const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
@@ -19,24 +19,19 @@ const ConsolidacionPanel = () => {
   const navigate = useNavigate();
   const { logoutAdmin } = useAuth();
 
-  // vista principal
   const [activeTab, setActiveTab] = useState('registrar');
-
-  // stats
   const [counts, setCounts]           = useState({ xtreme: 0, parejas: 0, '360': 0, senior: 0 });
   const [loadingCounts, setLoadingCounts] = useState(true);
 
-  // registro
   const [selectedRed, setSelectedRed] = useState('xtreme');
   const [form, setForm]               = useState(EMPTY_FORM);
   const [submitting, setSubmitting]   = useState(false);
   const [feedback, setFeedback]       = useState(null);
 
-  // consulta
-  const [redConsulta, setRedConsulta]       = useState('xtreme');
-  const [personas, setPersonas]             = useState([]);
-  const [loadingPersonas, setLoadingPersonas] = useState(false);
-  const [busqueda, setBusqueda]             = useState('');
+  const [redConsulta, setRedConsulta]           = useState('xtreme');
+  const [personas, setPersonas]                 = useState([]);
+  const [loadingPersonas, setLoadingPersonas]   = useState(false);
+  const [busqueda, setBusqueda]                 = useState('');
 
   useEffect(() => { loadCounts(); }, []);
 
@@ -81,7 +76,7 @@ const ConsolidacionPanel = () => {
     });
     if (result.success) {
       const redNombre = REDES.find(r => r.id === selectedRed).nombre;
-      setFeedback({ type: 'success', msg: `¡${form.nombre} registrado/a en ${redNombre}!` });
+      setFeedback({ type: 'success', msg: `${form.nombre} registrado/a en ${redNombre}` });
       setForm(EMPTY_FORM);
       loadCounts();
     } else {
@@ -92,8 +87,8 @@ const ConsolidacionPanel = () => {
 
   const handleLogout = () => { logoutAdmin(); navigate('/'); };
 
-  const total      = Object.values(counts).reduce((sum, c) => sum + c, 0);
-  const redConfig  = REDES.find(r => r.id === selectedRed);
+  const total     = Object.values(counts).reduce((sum, c) => sum + c, 0);
+  const redConfig = REDES.find(r => r.id === selectedRed);
   const redConsultaConfig = REDES.find(r => r.id === redConsulta);
 
   const personasFiltradas = useMemo(() => {
@@ -110,15 +105,14 @@ const ConsolidacionPanel = () => {
 
   return (
     <div className="consol-panel">
-      {/* Header */}
       <div className="consol-header">
         <div className="consol-header-left">
-          <h1 className="consol-title">⚙️ Consolidación</h1>
-          <p className="consol-subtitle">Panel de administración</p>
+          <h1 className="consol-title">Consolidacion</h1>
+          <p className="consol-subtitle">Panel de administracion</p>
         </div>
         <div className="consol-header-right">
-          <button className="btn-lobby" onClick={() => navigate('/')}>← Lobby</button>
-          <button className="btn-cerrar-sesion" onClick={handleLogout}>Cerrar sesión</button>
+          <button className="btn-lobby" onClick={() => navigate('/')}>Lobby</button>
+          <button className="btn-cerrar-sesion" onClick={handleLogout}>Cerrar sesion</button>
         </div>
       </div>
 
@@ -133,9 +127,8 @@ const ConsolidacionPanel = () => {
             <div
               key={red.id}
               className="consol-net-stat"
-              style={{ '--c1': red.color1, '--c2': red.color2 }}
+              style={{ '--c1': red.color }}
             >
-              <span className="consol-net-emoji">{red.emoji}</span>
               <span className="consol-net-count-big">
                 {loadingCounts ? '—' : counts[red.id]}
               </span>
@@ -150,17 +143,17 @@ const ConsolidacionPanel = () => {
             className={`consol-main-tab ${activeTab === 'registrar' ? 'active' : ''}`}
             onClick={() => setActiveTab('registrar')}
           >
-            ✏️ Registrar persona
+            Registrar persona
           </button>
           <button
             className={`consol-main-tab ${activeTab === 'consultar' ? 'active' : ''}`}
             onClick={() => setActiveTab('consultar')}
           >
-            👥 Ver personas
+            Ver personas
           </button>
         </div>
 
-        {/* ── Vista: Registrar ── */}
+        {/* Vista: Registrar */}
         {activeTab === 'registrar' && (
           <div className="consol-register-card">
             <h2 className="consol-card-title">Registrar nueva persona</h2>
@@ -171,10 +164,10 @@ const ConsolidacionPanel = () => {
                   key={red.id}
                   type="button"
                   className={`consol-red-tab ${selectedRed === red.id ? 'active' : ''}`}
-                  style={{ '--c1': red.color1, '--c2': red.color2 }}
+                  style={{ '--c1': red.color }}
                   onClick={() => { setSelectedRed(red.id); setFeedback(null); }}
                 >
-                  {red.emoji} {red.nombre}
+                  {red.nombre}
                 </button>
               ))}
             </div>
@@ -182,7 +175,7 @@ const ConsolidacionPanel = () => {
             <form
               onSubmit={handleSubmit}
               className="consol-form"
-              style={{ '--c1': redConfig.color1, '--c2': redConfig.color2 }}
+              style={{ '--c1': redConfig.color }}
             >
               <div className="consol-fields-grid">
                 <div className="form-group">
@@ -194,7 +187,7 @@ const ConsolidacionPanel = () => {
                   <input value={form.apellido} onChange={handleChange('apellido')} placeholder="Apellido" required autoComplete="off" />
                 </div>
                 <div className="form-group">
-                  <label>Teléfono *</label>
+                  <label>Telefono *</label>
                   <input value={form.telefono} onChange={handleChange('telefono')} placeholder="+57 300 000 0000" type="tel" required autoComplete="off" />
                 </div>
                 <div className="form-group">
@@ -203,41 +196,40 @@ const ConsolidacionPanel = () => {
                 </div>
                 <div className="form-group">
                   <label>A cargo de</label>
-                  <input value={form.aCargoDe} onChange={handleChange('aCargoDe')} placeholder="Líder responsable" autoComplete="off" />
+                  <input value={form.aCargoDe} onChange={handleChange('aCargoDe')} placeholder="Lider responsable" autoComplete="off" />
                 </div>
                 <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                  <label>Petición de oración</label>
-                  <textarea value={form.prayerRequest} onChange={handleChange('prayerRequest')} placeholder="Escribe una petición de oración (visible para todos los líderes)" rows="3" autoComplete="off" />
+                  <label>Peticion de oracion</label>
+                  <textarea value={form.prayerRequest} onChange={handleChange('prayerRequest')} placeholder="Escribe una peticion de oracion (visible para todos los lideres)" rows="3" autoComplete="off" />
                 </div>
               </div>
 
               {feedback && (
                 <div className={feedback.type === 'success' ? 'consol-feedback-ok' : 'login-error'}>
-                  {feedback.type === 'success' ? '✅ ' : '❌ '}{feedback.msg}
+                  {feedback.msg}
                 </div>
               )}
 
-              <button className="btn-submit" disabled={submitting}>
-                {submitting ? 'Registrando...' : `Registrar en ${redConfig.nombre} ${redConfig.emoji}`}
+              <button className="btn-submit" style={{ background: redConfig.color }} disabled={submitting}>
+                {submitting ? 'Registrando...' : `Registrar en ${redConfig.nombre}`}
               </button>
             </form>
           </div>
         )}
 
-        {/* ── Vista: Consultar ── */}
+        {/* Vista: Consultar */}
         {activeTab === 'consultar' && (
           <div className="consol-consulta-card">
-            {/* Selector de red */}
-            <div className="consol-red-tabs" style={{ marginBottom: '1.25rem' }}>
+            <div className="consol-red-tabs">
               {REDES.map(red => (
                 <button
                   key={red.id}
                   type="button"
                   className={`consol-red-tab ${redConsulta === red.id ? 'active' : ''}`}
-                  style={{ '--c1': red.color1, '--c2': red.color2 }}
+                  style={{ '--c1': red.color }}
                   onClick={() => { setRedConsulta(red.id); setBusqueda(''); }}
                 >
-                  {red.emoji} {red.nombre}
+                  {red.nombre}
                   {!loadingCounts && (
                     <span className="consol-tab-badge">{counts[red.id]}</span>
                   )}
@@ -245,30 +237,19 @@ const ConsolidacionPanel = () => {
               ))}
             </div>
 
-            {/* Buscador mejorado */}
-            <div className="search-bar-container">
+            <div className="form-group">
               <input
-                className="search-input-modern"
-                style={{ '--c1': redConsultaConfig.color1 }}
+                className="search-input"
                 type="text"
                 value={busqueda}
                 onChange={e => setBusqueda(e.target.value)}
-                placeholder="🔍 Buscar por nombre, teléfono, email, oración…"
+                placeholder="Buscar por nombre, telefono, email..."
+                style={{ '--c1': redConsultaConfig.color }}
               />
-              {busqueda && (
-                <button
-                  className="btn-clear-search"
-                  onClick={() => setBusqueda('')}
-                  title="Limpiar búsqueda"
-                >
-                  ✕
-                </button>
-              )}
             </div>
 
-            {/* Tabla moderna */}
             {loadingPersonas ? (
-              <div className="loading">⏳ Cargando personas…</div>
+              <div className="loading">Cargando personas...</div>
             ) : (
               <PersonasTable
                 personas={personas}
@@ -284,76 +265,5 @@ const ConsolidacionPanel = () => {
     </div>
   );
 };
-
-const PersonaRow = ({ persona: p, redConfig }) => {
-  const [expanded, setExpanded] = useState(false);
-
-  const cumple = p.mesCumple && p.diaCumple
-    ? `${p.diaCumple} ${MESES[parseInt(p.mesCumple, 10) - 1]}`
-    : null;
-
-  const ausencias = p.ausencias || 0;
-  const ausenciaClass = ausencias === 0
-    ? 'consol-badge-ok'
-    : ausencias <= 2
-      ? 'consol-badge-warn'
-      : 'consol-badge-danger';
-
-  return (
-    <div
-      className="consol-persona-row"
-      style={{ '--c1': redConfig.color1, '--c2': redConfig.color2 }}
-    >
-      <button
-        className="consol-persona-summary"
-        onClick={() => setExpanded(e => !e)}
-        type="button"
-      >
-        <div className="consol-persona-main">
-          <span className="consol-persona-nombre">{p.nombre} {p.apellido}</span>
-          {p.aCargoDe && (
-            <span className="consol-persona-cargo">A cargo de: {p.aCargoDe}</span>
-          )}
-        </div>
-        <div className="consol-persona-right">
-          {ausencias > 0 && (
-            <span className={`consol-ausencia-badge ${ausenciaClass}`}>
-              {ausencias} aus.
-            </span>
-          )}
-          <span className="consol-expand-icon">{expanded ? '▲' : '▼'}</span>
-        </div>
-      </button>
-
-      {expanded && (
-        <div className="consol-persona-detail">
-          {p.telefono  && <DetailRow icon="📞" text={p.telefono} href={`tel:${p.telefono}`} />}
-          {p.email     && <DetailRow icon="✉️" text={p.email}    href={`mailto:${p.email}`} />}
-          {p.edad      && <DetailRow icon="🎂" text={`${p.edad} años`} />}
-          {cumple      && <DetailRow icon="🎉" text={`Cumpleaños: ${cumple}`} />}
-          {p.aCargoDe  && <DetailRow icon="👤" text={`Líder: ${p.aCargoDe}`} />}
-          {p.prayerRequest && (
-            <DetailRow icon="🙏" text={`Oración: ${p.prayerRequest}`} />
-          )}
-          <DetailRow
-            icon="📊"
-            text={`Ausencias: ${ausencias}`}
-            badge={ausenciaClass}
-          />
-        </div>
-      )}
-    </div>
-  );
-};
-
-const DetailRow = ({ icon, text, href, badge }) => (
-  <div className={`consol-detail-row ${badge ? badge : ''}`}>
-    <span>{icon}</span>
-    {href
-      ? <a href={href} className="consol-detail-link">{text}</a>
-      : <span>{text}</span>
-    }
-  </div>
-);
 
 export default ConsolidacionPanel;

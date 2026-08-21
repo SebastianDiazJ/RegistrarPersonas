@@ -5,10 +5,10 @@ import PersonList from '../components/PersonList';
 import { useAuth } from '../context/AuthContext';
 
 const REDES_CONFIG = {
-  xtreme:  { nombre: 'XTREME',  emoji: '🔥', color1: '#667eea', color2: '#764ba2' },
-  parejas: { nombre: 'PAREJAS', emoji: '💑', color1: '#f093fb', color2: '#f5576c' },
-  '360':   { nombre: '360',     emoji: '🌐', color1: '#4facfe', color2: '#00f2fe' },
-  senior:  { nombre: 'SENIOR',  emoji: '👴', color1: '#fa709a', color2: '#fee140' }
+  xtreme:  { nombre: 'XTREME',  color: '#4338CA' },
+  parejas: { nombre: 'PAREJAS', color: '#BE185D' },
+  '360':   { nombre: '360',     color: '#0369A1' },
+  senior:  { nombre: 'SENIOR',  color: '#B45309' }
 };
 
 const NetworkApp = ({ red }) => {
@@ -35,17 +35,14 @@ const NetworkApp = ({ red }) => {
   };
 
   return (
-    <div
-      className="app"
-      style={{ '--c1': config.color1, '--c2': config.color2 }}
-    >
+    <div className="app" style={{ '--c1': config.color }}>
       <header className="app-header">
         <button className="btn-lobby" onClick={() => navigate('/')}>
-          ← Lobby
+          Lobby
         </button>
-        <h1>{config.emoji} Red {config.nombre}</h1>
+        <h1>Red {config.nombre}</h1>
         <button className="btn-cerrar-sesion" onClick={handleSalir}>
-          Cerrar sesión
+          Cerrar sesion
         </button>
       </header>
 
@@ -54,13 +51,13 @@ const NetworkApp = ({ red }) => {
           className={`tab-button ${activeTab === 'register' ? 'active' : ''}`}
           onClick={() => setActiveTab('register')}
         >
-          ➕ Registrar
+          Registrar
         </button>
         <button
           className={`tab-button ${activeTab === 'list' ? 'active' : ''}`}
           onClick={() => setActiveTab('list')}
         >
-          👥 Consultar
+          Consultar
         </button>
       </nav>
 

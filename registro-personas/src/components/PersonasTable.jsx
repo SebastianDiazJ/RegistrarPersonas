@@ -24,7 +24,6 @@ const PersonasTable = ({ personas, red, redConfig, busqueda, onRefresh }) => {
       );
     }
 
-    // Ordenar
     return filtered.sort((a, b) => {
       let aVal, bVal;
       switch (sortBy) {
@@ -47,7 +46,6 @@ const PersonasTable = ({ personas, red, redConfig, busqueda, onRefresh }) => {
         default:
           return 0;
       }
-
       const comparison = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
       return sortDir === 'asc' ? comparison : -comparison;
     });
@@ -70,40 +68,29 @@ const PersonasTable = ({ personas, red, redConfig, busqueda, onRefresh }) => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('¿Eliminar esta persona?')) {
+    if (window.confirm('Eliminar esta persona?')) {
       const result = await deletePerson(red, id);
-      if (result.success) {
-        onRefresh();
-      }
+      if (result.success) onRefresh();
     }
   };
 
-  const handleMarkCalled = async (id, persona) => {
+  const handleMarkCalled = async (id) => {
     const result = await updatePerson(red, id, {
       lastCallDate: new Date().toISOString(),
       callConfirmed: true
     });
-    if (result.success) {
-      onRefresh();
-    }
+    if (result.success) onRefresh();
   };
 
   const getSortIcon = (col) => {
-    if (sortBy !== col) return '↕️';
-    return sortDir === 'asc' ? '↑' : '↓';
+    if (sortBy !== col) return ' ↕';
+    return sortDir === 'asc' ? ' ↑' : ' ↓';
   };
 
-  const getCallStatusColor = (persona) => {
-    const status = getCallAlertStatus(persona);
-    if (status.isAlert) return '#fee2e2'; // Rojo claro
-    if (persona.lastCallDate) return '#dcfce7'; // Verde claro
-    return '#f3f4f6'; // Gris claro
-  };
-
-  const getAusenciasColor = (ausencias) => {
-    if (!ausencias) return '#dcfce7';
-    if (ausencias <= 2) return '#fef3c7';
-    return '#fee2e2';
+  const getAusenciasClass = (ausencias) => {
+    if (!ausencias || ausencias === 0) return 'ausencias-ok';
+    if (ausencias <= 2) return 'ausencias-warn';
+    return 'ausencias-danger';
   };
 
   return (
@@ -116,56 +103,52 @@ const PersonasTable = ({ personas, red, redConfig, busqueda, onRefresh }) => {
 
       {personasFiltradas.length === 0 ? (
         <div className="table-empty">
-          {busqueda ? '❌ Sin resultados para esa búsqueda' : '📭 No hay personas registradas'}
+          {busqueda ? 'Sin resultados para esa busqueda' : 'No hay personas registradas'}
         </div>
       ) : (
         <div className="table-wrapper">
           <table className="personas-table">
             <thead>
-              <tr style={{ backgroundColor: redConfig.color1 + '20' }}>
-                <th className="col-expand"></th>
+              <tr>
+                <th></th>
                 <th
-                  className="col-nombre sortable"
+                  className="sortable"
                   onClick={() => {
                     if (sortBy === 'nombre') setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
                     else { setSortBy('nombre'); setSortDir('asc'); }
                   }}
-                  title="Ordenar por nombre"
                 >
-                  👤 Nombre {getSortIcon('nombre')}
+                  Nombre{getSortIcon('nombre')}
                 </th>
                 <th
-                  className="col-telefono sortable"
+                  className="sortable"
                   onClick={() => {
                     if (sortBy === 'telefono') setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
                     else { setSortBy('telefono'); setSortDir('asc'); }
                   }}
-                  title="Ordenar por teléfono"
                 >
-                  📱 Teléfono {getSortIcon('telefono')}
+                  Telefono{getSortIcon('telefono')}
                 </th>
-                <th className="col-email">📧 Email</th>
+                <th>Email</th>
                 <th
-                  className="col-llamada sortable"
+                  className="sortable"
                   onClick={() => {
                     if (sortBy === 'ultimallamada') setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
                     else { setSortBy('ultimallamada'); setSortDir('asc'); }
                   }}
-                  title="Ordenar por última llamada"
                 >
-                  📞 Última llamada {getSortIcon('ultimallamada')}
+                  Ultima llamada{getSortIcon('ultimallamada')}
                 </th>
                 <th
-                  className="col-ausencias sortable"
+                  className="sortable"
                   onClick={() => {
                     if (sortBy === 'ausencias') setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
                     else { setSortBy('ausencias'); setSortDir('asc'); }
                   }}
-                  title="Ordenar por ausencias"
                 >
-                  📵 Ausencias {getSortIcon('ausencias')}
+                  Ausencias{getSortIcon('ausencias')}
                 </th>
-                <th className="col-acciones">⚙️ Acciones</th>
+                <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -177,18 +160,16 @@ const PersonasTable = ({ personas, red, redConfig, busqueda, onRefresh }) => {
                   <tr
                     key={p.id}
                     className={`table-row ${callStatus.isAlert ? 'alert' : ''}`}
-                    style={{ backgroundColor: getCallStatusColor(p) }}
                   >
-                    <td className="col-expand">
+                    <td>
                       <button
                         className="btn-expand-row"
                         onClick={() => setExpandedId(expandedId === p.id ? null : p.id)}
-                        title="Ver detalles"
                       >
                         {expandedId === p.id ? '▼' : '▶'}
                       </button>
                     </td>
-                    <td className="col-nombre">
+                    <td>
                       {isEditing ? (
                         <input
                           type="text"
@@ -207,7 +188,7 @@ const PersonasTable = ({ personas, red, redConfig, busqueda, onRefresh }) => {
                         <strong>{p.nombre} {p.apellido}</strong>
                       )}
                     </td>
-                    <td className="col-telefono">
+                    <td>
                       {isEditing ? (
                         <input
                           type="tel"
@@ -219,12 +200,12 @@ const PersonasTable = ({ personas, red, redConfig, busqueda, onRefresh }) => {
                         <>
                           {p.telefono}
                           {p.telefono && (
-                            <a href={`tel:${p.telefono}`} className="link-icon" title="Llamar">📞</a>
+                            <a href={`tel:${p.telefono}`} className="link-icon" title="Llamar">Tel</a>
                           )}
                         </>
                       )}
                     </td>
-                    <td className="col-email">
+                    <td>
                       {isEditing ? (
                         <input
                           type="email"
@@ -233,15 +214,14 @@ const PersonasTable = ({ personas, red, redConfig, busqueda, onRefresh }) => {
                           className="input-edit"
                         />
                       ) : p.email ? (
-                        <>
-                          {p.email.substring(0, 20)}...
-                          <a href={`mailto:${p.email}`} className="link-icon" title="Enviar email">✉️</a>
-                        </>
+                        <a href={`mailto:${p.email}`} className="consol-detail-link" title={p.email}>
+                          {p.email.length > 22 ? p.email.substring(0, 20) + '…' : p.email}
+                        </a>
                       ) : (
                         <span className="text-muted">—</span>
                       )}
                     </td>
-                    <td className="col-llamada">
+                    <td>
                       {isEditing ? (
                         <input
                           type="date"
@@ -252,13 +232,13 @@ const PersonasTable = ({ personas, red, redConfig, busqueda, onRefresh }) => {
                       ) : p.lastCallDate ? (
                         <span className={callStatus.isAlert ? 'text-danger' : 'text-success'}>
                           {new Date(p.lastCallDate).toLocaleDateString('es-CO')}
-                          {callStatus.isAlert && ' ⚠️'}
+                          {callStatus.isAlert && ' (!!)'}
                         </span>
                       ) : (
                         <span className="text-muted">—</span>
                       )}
                     </td>
-                    <td className="col-ausencias">
+                    <td>
                       {isEditing ? (
                         <input
                           type="number"
@@ -268,38 +248,28 @@ const PersonasTable = ({ personas, red, redConfig, busqueda, onRefresh }) => {
                           className="input-edit input-number"
                         />
                       ) : (
-                        <span
-                          className="ausencias-badge"
-                          style={{
-                            backgroundColor: getAusenciasColor(p.ausencias || 0),
-                            padding: '4px 8px',
-                            borderRadius: '6px',
-                            display: 'inline-block',
-                            minWidth: '40px',
-                            textAlign: 'center'
-                          }}
-                        >
+                        <span className={`ausencias-badge ${getAusenciasClass(p.ausencias || 0)}`}>
                           {p.ausencias || 0}
                         </span>
                       )}
                     </td>
-                    <td className="col-acciones">
+                    <td>
                       {isEditing ? (
                         <div className="action-buttons">
-                          <button className="btn-save" onClick={handleSave}>✓ Guardar</button>
-                          <button className="btn-cancel" onClick={() => setEditingId(null)}>✗ Cancelar</button>
+                          <button className="btn-save" onClick={handleSave}>Guardar</button>
+                          <button className="btn-cancel" onClick={() => setEditingId(null)}>Cancelar</button>
                         </div>
                       ) : (
                         <div className="action-buttons">
-                          <button className="btn-edit-row" onClick={() => handleEdit(p)} title="Editar">✏️</button>
+                          <button className="btn-edit-row" onClick={() => handleEdit(p)}>Editar</button>
                           <button
                             className="btn-call-row"
-                            onClick={() => handleMarkCalled(p.id, p)}
+                            onClick={() => handleMarkCalled(p.id)}
                             title="Marcar como contactado"
                           >
-                            📞
+                            Llame
                           </button>
-                          <button className="btn-delete-row" onClick={() => handleDelete(p.id)} title="Eliminar">🗑️</button>
+                          <button className="btn-delete-row" onClick={() => handleDelete(p.id)}>Eliminar</button>
                         </div>
                       )}
                     </td>
@@ -328,46 +298,46 @@ const PersonaDetails = ({ persona: p, redConfig }) => {
   const callStatus = getCallAlertStatus(p);
 
   return (
-    <div className="details-grid" style={{ borderLeftColor: redConfig.color1 }}>
+    <div className="details-grid" style={{ borderLeftColor: redConfig.color }}>
       <div className="detail-row">
-        <span className="detail-label">👤 Nombre completo:</span>
+        <span className="detail-label">Nombre completo</span>
         <span className="detail-value">{p.nombre} {p.apellido}</span>
       </div>
       <div className="detail-row">
-        <span className="detail-label">📱 Teléfono:</span>
+        <span className="detail-label">Telefono</span>
         <span className="detail-value">
-          {p.telefono ? <a href={`tel:${p.telefono}`}>{p.telefono}</a> : '—'}
+          {p.telefono ? <a href={`tel:${p.telefono}`} className="consol-detail-link">{p.telefono}</a> : '—'}
         </span>
       </div>
       <div className="detail-row">
-        <span className="detail-label">📧 Email:</span>
+        <span className="detail-label">Email</span>
         <span className="detail-value">
-          {p.email ? <a href={`mailto:${p.email}`}>{p.email}</a> : '—'}
+          {p.email ? <a href={`mailto:${p.email}`} className="consol-detail-link">{p.email}</a> : '—'}
         </span>
       </div>
       <div className="detail-row">
-        <span className="detail-label">👤 A cargo de:</span>
+        <span className="detail-label">A cargo de</span>
         <span className="detail-value">{p.aCargoDe || '—'}</span>
       </div>
       {p.prayerRequest && (
         <div className="detail-row detail-row-full">
-          <span className="detail-label">🙏 Petición de oración:</span>
+          <span className="detail-label">Peticion de oracion</span>
           <span className="detail-value prayer-text">{p.prayerRequest}</span>
         </div>
       )}
       <div className="detail-row">
-        <span className="detail-label">📊 Estado de llamada:</span>
+        <span className="detail-label">Estado de llamada</span>
         <span className="detail-value">
-          {callStatus.isAlert ? '⚠️ Necesita contacto (48+ hrs)' : p.lastCallDate ? '✓ Al día' : '❓ Nunca contactado'}
+          {callStatus.isAlert ? 'Necesita contacto (48+ hrs)' : p.lastCallDate ? 'Al dia' : 'Nunca contactado'}
         </span>
       </div>
       <div className="detail-row">
-        <span className="detail-label">📵 Ausencias:</span>
+        <span className="detail-label">Ausencias</span>
         <span className="detail-value">{p.ausencias || 0}</span>
       </div>
       {p.createdAt && (
         <div className="detail-row">
-          <span className="detail-label">📅 Registrado:</span>
+          <span className="detail-label">Registrado</span>
           <span className="detail-value">{new Date(p.createdAt).toLocaleDateString('es-CO')}</span>
         </div>
       )}

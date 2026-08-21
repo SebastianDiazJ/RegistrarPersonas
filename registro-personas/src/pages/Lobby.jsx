@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { getCountByRed } from '../services/personService';
 
 const REDES = [
-  { id: 'xtreme', nombre: 'XTREME', emoji: '🔥', color1: '#667eea', color2: '#764ba2' },
-  { id: 'parejas', nombre: 'PAREJAS', emoji: '💑', color1: '#f093fb', color2: '#f5576c' },
-  { id: '360', nombre: '360', emoji: '🌐', color1: '#4facfe', color2: '#00f2fe' },
-  { id: 'senior', nombre: 'SENIOR', emoji: '👴', color1: '#fa709a', color2: '#fee140' }
+  { id: 'xtreme',  nombre: 'XTREME',  color: '#4338CA' },
+  { id: 'parejas', nombre: 'PAREJAS', color: '#BE185D' },
+  { id: '360',     nombre: '360',     color: '#0369A1' },
+  { id: 'senior',  nombre: 'SENIOR',  color: '#B45309' }
 ];
 
 const Lobby = () => {
@@ -30,11 +30,13 @@ const Lobby = () => {
   return (
     <div className="lobby">
       <div className="lobby-header">
-        <h1 className="lobby-title">Sistema de Redes</h1>
-        <p className="lobby-subtitle">Selecciona tu red para continuar</p>
+        <div>
+          <span className="lobby-subtitle">Sistema de Registro</span>
+          <h1 className="lobby-title">Redes Iglesia</h1>
+        </div>
         <div className="lobby-total">
           <span className="total-number">{loadingCounts ? '—' : total}</span>
-          <span className="total-label">personas registradas en total</span>
+          <span className="total-label">personas registradas</span>
         </div>
       </div>
 
@@ -43,25 +45,22 @@ const Lobby = () => {
           <div
             key={red.id}
             className="lobby-card"
-            style={{ '--c1': red.color1, '--c2': red.color2 }}
+            style={{ '--c1': red.color }}
             onClick={() => navigate(`/${red.id}/login`)}
           >
-            <div className="lobby-card-glow" />
-            <span className="lobby-card-emoji">{red.emoji}</span>
-            <h2 className="lobby-card-name">{red.nombre}</h2>
-            <div className="lobby-card-count">
+            <span className="lobby-card-count">
               {loadingCounts ? '—' : counts[red.id]}
               <span className="lobby-card-count-label">personas</span>
-            </div>
-            <button className="lobby-card-btn">Entrar</button>
+            </span>
+            <span className="lobby-card-name">{red.nombre}</span>
           </div>
         ))}
       </div>
 
       <div className="lobby-footer-row">
-        <p className="lobby-footer">Sistema de Registro — Iglesia</p>
+        <p className="lobby-footer">Sistema de Registro de Redes</p>
         <button className="lobby-admin-link" onClick={() => navigate('/consolidacion/login')}>
-          ⚙️ Consolidación
+          Consolidacion
         </button>
       </div>
     </div>

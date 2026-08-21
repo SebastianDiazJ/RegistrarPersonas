@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { getAllPersons, deletePerson, markAbsence, resetAbsences, updatePerson } from '../services/personService';
-import { getCallAlertStatus, getPersonasNeedingCall } from '../services/callAlertService';
+import { getPersonasNeedingCall } from '../services/callAlertService';
 import PersonCard from './PersonCard';
 
 const MESES = [
@@ -32,7 +32,7 @@ const PersonList = ({ red, refresh, onEdit }) => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('¿Eliminar esta persona?')) return;
+    if (!window.confirm('Eliminar esta persona?')) return;
     const result = await deletePerson(red, id);
     if (result.success) setPersons(prev => prev.filter(p => p.id !== id));
   };
@@ -47,7 +47,7 @@ const PersonList = ({ red, refresh, onEdit }) => {
   };
 
   const handleResetAbsences = async (id) => {
-    if (!window.confirm('¿Reiniciar el contador de ausencias?')) return;
+    if (!window.confirm('Reiniciar el contador de ausencias?')) return;
     const result = await resetAbsences(red, id);
     if (result.success) {
       setPersons(prev => prev.map(p =>
@@ -158,7 +158,7 @@ const PersonList = ({ red, refresh, onEdit }) => {
       <div className="form-group">
         <input
           type="text"
-          placeholder="Buscar por nombre, teléfono..."
+          placeholder="Buscar por nombre, telefono..."
           value={search}
           onChange={e => setSearch(e.target.value)}
           className="search-input"
@@ -172,7 +172,7 @@ const PersonList = ({ red, refresh, onEdit }) => {
             value={filtroCargo}
             onChange={e => setFiltroCargo(e.target.value)}
           >
-            <option value="">👤 Todos — A cargo de</option>
+            <option value="">Todos — A cargo de</option>
             {opcionesCargo.map(nombre => (
               <option key={nombre} value={nombre}>{nombre}</option>
             ))}
@@ -191,8 +191,8 @@ const PersonList = ({ red, refresh, onEdit }) => {
             className="call-alert-header"
             onClick={() => setCallAlertOpen(o => !o)}
           >
-            <span>📞 {personasNecesitanLlamada.length} persona{personasNecesitanLlamada.length > 1 ? 's' : ''} necesita contacto (48+ hrs) — ¡Actúa!</span>
-            <span className="alert-toggle">{callAlertOpen ? '▲' : '▼'}</span>
+            <span>{personasNecesitanLlamada.length} persona{personasNecesitanLlamada.length > 1 ? 's' : ''} necesita contacto (48+ hrs)</span>
+            <span className="alert-toggle">{callAlertOpen ? 'Ocultar' : 'Ver'}</span>
           </button>
           {callAlertOpen && (
             <div className="call-alert-list">
@@ -202,20 +202,20 @@ const PersonList = ({ red, refresh, onEdit }) => {
                     <span className="call-alert-nombre">{p.nombre} {p.apellido}</span>
                     {p.aCargoDe && <span className="call-alert-cargo">A cargo de: {p.aCargoDe}</span>}
                     {p.lastCallDate && (
-                      <span className="call-alert-date">Última llamada: {new Date(p.lastCallDate).toLocaleDateString('es-CO')}</span>
+                      <span className="call-alert-date">Ultima llamada: {new Date(p.lastCallDate).toLocaleDateString('es-CO')}</span>
                     )}
                   </div>
                   <div className="call-alert-actions">
                     {p.telefono && (
                       <a className="btn-llamar" href={`tel:${p.telefono}`}>
-                        📱 Llamar
+                        Llamar
                       </a>
                     )}
                     <button
                       className="btn-confirmar-llamada"
                       onClick={() => handleMarkCalled(p.id)}
                     >
-                      ✓ Ya llamé
+                      Ya llame
                     </button>
                   </div>
                 </div>
@@ -232,8 +232,8 @@ const PersonList = ({ red, refresh, onEdit }) => {
             className="ausentes-alert-header"
             onClick={() => setAlertOpen(o => !o)}
           >
-            <span>📵 {personasAusentes.length} persona{personasAusentes.length > 1 ? 's' : ''} con {AUSENCIAS_ALERTA}+ ausencias — ¡Llámalas!</span>
-            <span className="alert-toggle">{alertOpen ? '▲' : '▼'}</span>
+            <span>{personasAusentes.length} persona{personasAusentes.length > 1 ? 's' : ''} con {AUSENCIAS_ALERTA}+ ausencias</span>
+            <span className="alert-toggle">{alertOpen ? 'Ocultar' : 'Ver'}</span>
           </button>
           {alertOpen && (
             <div className="ausentes-list">
@@ -247,7 +247,7 @@ const PersonList = ({ red, refresh, onEdit }) => {
                     <span className="ausente-count">{p.ausencias} aus.</span>
                     {p.telefono && (
                       <a className="ausente-tel" href={`tel:${p.telefono}`}>
-                        📱 {p.telefono}
+                        {p.telefono}
                       </a>
                     )}
                   </div>
@@ -258,31 +258,32 @@ const PersonList = ({ red, refresh, onEdit }) => {
         </div>
       )}
 
-      {/* Cumpleaños hoy */}
+      {/* Cumpleanos hoy */}
       {birthdaysToday.length > 0 && (
         <p className="birthday-counter">
-          🎂 Cumpleaños HOY: {birthdaysToday.map(p => p.nombre).join(', ')}
+          Cumpleanos HOY: {birthdaysToday.map(p => p.nombre).join(', ')}
         </p>
       )}
 
-      {/* Cumpleaños semana */}
-      <p className="birthday-counter">
-        🎂 Cumpleaños esta semana: {birthdaysThisWeek.length}
-      </p>
-
+      {/* Cumpleanos semana */}
       {birthdaysThisWeek.length > 0 && (
-        <div className="birthday-box">
-          <h4 className="nameBirthday">🎉 Cumpleaños de esta semana:</h4>
-          {birthdaysThisWeek.map(p => {
-            const b = getBirthdayLabel(p);
-            const mesLabel = b ? MESES[b.mes] : '';
-            return (
-              <p className="nameBirthday" key={p.id}>
-                {p.nombre} {p.apellido} — {b?.dia} de {mesLabel}
-              </p>
-            );
-          })}
-        </div>
+        <>
+          <p className="birthday-counter">
+            Cumpleanos esta semana: {birthdaysThisWeek.length}
+          </p>
+          <div className="birthday-box">
+            <h4 className="nameBirthday">Cumpleanos de esta semana:</h4>
+            {birthdaysThisWeek.map(p => {
+              const b = getBirthdayLabel(p);
+              const mesLabel = b ? MESES[b.mes] : '';
+              return (
+                <p className="nameBirthday" key={p.id}>
+                  {p.nombre} {p.apellido} — {b?.dia} de {mesLabel}
+                </p>
+              );
+            })}
+          </div>
+        </>
       )}
 
       <div className="person-list">

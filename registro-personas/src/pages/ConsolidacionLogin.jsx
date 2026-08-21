@@ -27,8 +27,7 @@ const ConsolidacionLogin = () => {
     <div className="consol-login-page">
       <div className="login-card">
         <div className="login-header">
-          <span className="login-emoji">⚙️</span>
-          <h1 className="login-title">Consolidación</h1>
+          <h1 className="login-title">Consolidacion</h1>
           <p className="login-subtitle">Acceso exclusivo administrador</p>
         </div>
 
@@ -45,12 +44,12 @@ const ConsolidacionLogin = () => {
             />
           </div>
           <div className="form-group">
-            <label>Contraseña</label>
+            <label>Contrasena</label>
             <input
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
-              placeholder="••••••••"
+              placeholder="Contrasena"
               autoComplete="current-password"
               required
             />
@@ -68,12 +67,12 @@ const ConsolidacionLogin = () => {
             className="btn-entrar-directo consol-btn-directo"
             onClick={() => navigate('/consolidacion')}
           >
-            Sesión activa — Entrar directo →
+            Sesion activa — Entrar directo
           </button>
         )}
 
         <button className="btn-back-lobby" onClick={() => navigate('/')}>
-          ← Volver al Lobby
+          Volver al Lobby
         </button>
       </div>
     </div>
