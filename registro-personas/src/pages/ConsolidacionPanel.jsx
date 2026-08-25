@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getCountByRed, addPerson, getAllPersons } from '../services/personService';
+import { computeRedStats } from '../services/statsService';
 import PersonasTable from '../components/PersonasTable';
 
 const REDES = [
@@ -11,9 +12,15 @@ const REDES = [
   { id: 'senior',  nombre: 'SENIOR',  color: '#B45309' }
 ];
 
-const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const METODOS_INVITACION = ['Publicidad', 'Volante', 'Familiar', 'Amigo', 'Redes sociales', 'Otro'];
 
-const EMPTY_FORM = { nombre: '', apellido: '', telefono: '', aCargoDe: '', email: '', prayerRequest: '' };
+const EMPTY_FORM = {
+  nombre: '', apellido: '', telefono: '', aCargoDe: '',
+  email: '', prayerRequest: '', metodoInvitacion: '',
+  fechaIngreso: new Date().toISOString().split('T')[0]
+};
+
+const SERVICIOS_LABEL = { sabado: 'Sábado', domingo: 'Domingo', miercoles: 'Miércoles' };
 
 const ConsolidacionPanel = () => {
   const navigate = useNavigate();
@@ -33,11 +40,20 @@ const ConsolidacionPanel = () => {
   const [loadingPersonas, setLoadingPersonas]   = useState(false);
   const [busqueda, setBusqueda]                 = useState('');
 
+  // Stats
+  const [statsRed, setStatsRed]           = useState('xtreme');
+  const [allPersonasStats, setAllPersonasStats] = useState({});
+  const [loadingStats, setLoadingStats]   = useState(false);
+
   useEffect(() => { loadCounts(); }, []);
 
   useEffect(() => {
     if (activeTab === 'consultar') loadPersonas(redConsulta);
   }, [activeTab, redConsulta]);
+
+  useEffect(() => {
+    if (activeTab === 'estadisticas') loadAllStats();
+  }, [activeTab]);
 
   const loadCounts = async () => {
     setLoadingCounts(true);
@@ -56,23 +72,31 @@ const ConsolidacionPanel = () => {
     setLoadingPersonas(false);
   };
 
-  const handleChange = (field) => (e) =>
-    setForm(f => ({ ...f, [field]: e.target.value }));
+  const loadAllStats = async () => {
+    setLoadingStats(true);
+    const results = await Promise.all(REDES.map(r => getAllPersons(r.id)));
+    const map = {};
+    REDES.forEach((r, i) => {
+      if (results[i].success) map[r.id] = computeRedStats(results[i].data);
+    });
+    setAllPersonasStats(map);
+    setLoadingStats(false);
+  };
+
+  const handleChange = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
     setFeedback(null);
     const result = await addPerson(selectedRed, {
-      nombre:    form.nombre.trim(),
-      apellido:  form.apellido.trim(),
-      telefono:  form.telefono.trim(),
-      aCargoDe:  form.aCargoDe.trim(),
-      email:     form.email.trim(),
-      prayerRequest: form.prayerRequest.trim(),
+      nombre: form.nombre.trim(), apellido: form.apellido.trim(),
+      telefono: form.telefono.trim(), aCargoDe: form.aCargoDe.trim(),
+      email: form.email.trim(), prayerRequest: form.prayerRequest.trim(),
+      metodoInvitacion: form.metodoInvitacion,
+      fechaIngreso: form.fechaIngreso,
       edad: '', mesCumple: '', diaCumple: '', ausencias: 0,
-      lastCallDate: null,
-      callConfirmed: false
+      lastCallDate: null, callConfirmed: false
     });
     if (result.success) {
       const redNombre = REDES.find(r => r.id === selectedRed).nombre;
@@ -90,15 +114,17 @@ const ConsolidacionPanel = () => {
   const total     = Object.values(counts).reduce((sum, c) => sum + c, 0);
   const redConfig = REDES.find(r => r.id === selectedRed);
   const redConsultaConfig = REDES.find(r => r.id === redConsulta);
+  const currentStats = allPersonasStats[statsRed];
+  const statsRedConfig = REDES.find(r => r.id === statsRed);
 
   const personasFiltradas = useMemo(() => {
     const q = busqueda.toLowerCase().trim();
     if (!q) return personas;
     return personas.filter(p =>
       `${p.nombre} ${p.apellido}`.toLowerCase().includes(q) ||
-      (p.telefono  || '').includes(q) ||
-      (p.email     || '').toLowerCase().includes(q) ||
-      (p.aCargoDe  || '').toLowerCase().includes(q) ||
+      (p.telefono || '').includes(q) ||
+      (p.email || '').toLowerCase().includes(q) ||
+      (p.aCargoDe || '').toLowerCase().includes(q) ||
       (p.prayerRequest || '').toLowerCase().includes(q)
     );
   }, [personas, busqueda]);
@@ -117,21 +143,15 @@ const ConsolidacionPanel = () => {
       </div>
 
       <div className="consol-body">
-        {/* Stats */}
+        {/* Stats rápidas */}
         <div className="consol-stats-row">
           <div className="consol-total-card">
             <span className="consol-total-num">{loadingCounts ? '—' : total}</span>
             <span className="consol-total-label">Total personas</span>
           </div>
           {REDES.map(red => (
-            <div
-              key={red.id}
-              className="consol-net-stat"
-              style={{ '--c1': red.color }}
-            >
-              <span className="consol-net-count-big">
-                {loadingCounts ? '—' : counts[red.id]}
-              </span>
+            <div key={red.id} className="consol-net-stat" style={{ '--c1': red.color }}>
+              <span className="consol-net-count-big">{loadingCounts ? '—' : counts[red.id]}</span>
               <span className="consol-net-name">{red.nombre}</span>
             </div>
           ))}
@@ -139,25 +159,25 @@ const ConsolidacionPanel = () => {
 
         {/* Tabs principales */}
         <div className="consol-main-tabs">
-          <button
-            className={`consol-main-tab ${activeTab === 'registrar' ? 'active' : ''}`}
-            onClick={() => setActiveTab('registrar')}
-          >
-            Registrar persona
-          </button>
-          <button
-            className={`consol-main-tab ${activeTab === 'consultar' ? 'active' : ''}`}
-            onClick={() => setActiveTab('consultar')}
-          >
-            Ver personas
-          </button>
+          {[
+            { id: 'registrar',   label: 'Registrar persona' },
+            { id: 'consultar',   label: 'Ver personas' },
+            { id: 'estadisticas', label: 'Estadísticas' }
+          ].map(t => (
+            <button
+              key={t.id}
+              className={`consol-main-tab ${activeTab === t.id ? 'active' : ''}`}
+              onClick={() => setActiveTab(t.id)}
+            >
+              {t.label}
+            </button>
+          ))}
         </div>
 
-        {/* Vista: Registrar */}
+        {/* ── Vista: Registrar ── */}
         {activeTab === 'registrar' && (
           <div className="consol-register-card">
             <h2 className="consol-card-title">Registrar nueva persona</h2>
-
             <div className="consol-red-tabs">
               {REDES.map(red => (
                 <button
@@ -172,11 +192,7 @@ const ConsolidacionPanel = () => {
               ))}
             </div>
 
-            <form
-              onSubmit={handleSubmit}
-              className="consol-form"
-              style={{ '--c1': redConfig.color }}
-            >
+            <form onSubmit={handleSubmit} className="consol-form" style={{ '--c1': redConfig.color }}>
               <div className="consol-fields-grid">
                 <div className="form-group">
                   <label>Nombre *</label>
@@ -187,7 +203,7 @@ const ConsolidacionPanel = () => {
                   <input value={form.apellido} onChange={handleChange('apellido')} placeholder="Apellido" required autoComplete="off" />
                 </div>
                 <div className="form-group">
-                  <label>Telefono *</label>
+                  <label>Teléfono *</label>
                   <input value={form.telefono} onChange={handleChange('telefono')} placeholder="+57 300 000 0000" type="tel" required autoComplete="off" />
                 </div>
                 <div className="form-group">
@@ -195,12 +211,23 @@ const ConsolidacionPanel = () => {
                   <input value={form.email} onChange={handleChange('email')} placeholder="correo@ejemplo.com" type="email" autoComplete="off" />
                 </div>
                 <div className="form-group">
+                  <label>Fecha de ingreso</label>
+                  <input value={form.fechaIngreso} onChange={handleChange('fechaIngreso')} type="date" />
+                </div>
+                <div className="form-group">
+                  <label>Método de invitación</label>
+                  <select value={form.metodoInvitacion} onChange={handleChange('metodoInvitacion')}>
+                    <option value="">Seleccionar...</option>
+                    {METODOS_INVITACION.map(m => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                </div>
+                <div className="form-group">
                   <label>A cargo de</label>
-                  <input value={form.aCargoDe} onChange={handleChange('aCargoDe')} placeholder="Lider responsable" autoComplete="off" />
+                  <input value={form.aCargoDe} onChange={handleChange('aCargoDe')} placeholder="Líder responsable" autoComplete="off" />
                 </div>
                 <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                  <label>Peticion de oracion</label>
-                  <textarea value={form.prayerRequest} onChange={handleChange('prayerRequest')} placeholder="Escribe una peticion de oracion (visible para todos los lideres)" rows="3" autoComplete="off" />
+                  <label>Petición de oración</label>
+                  <textarea value={form.prayerRequest} onChange={handleChange('prayerRequest')} placeholder="(opcional)" rows="2" autoComplete="off" />
                 </div>
               </div>
 
@@ -209,7 +236,6 @@ const ConsolidacionPanel = () => {
                   {feedback.msg}
                 </div>
               )}
-
               <button className="btn-submit" style={{ background: redConfig.color }} disabled={submitting}>
                 {submitting ? 'Registrando...' : `Registrar en ${redConfig.nombre}`}
               </button>
@@ -217,7 +243,7 @@ const ConsolidacionPanel = () => {
           </div>
         )}
 
-        {/* Vista: Consultar */}
+        {/* ── Vista: Consultar ── */}
         {activeTab === 'consultar' && (
           <div className="consol-consulta-card">
             <div className="consol-red-tabs">
@@ -230,24 +256,20 @@ const ConsolidacionPanel = () => {
                   onClick={() => { setRedConsulta(red.id); setBusqueda(''); }}
                 >
                   {red.nombre}
-                  {!loadingCounts && (
-                    <span className="consol-tab-badge">{counts[red.id]}</span>
-                  )}
+                  {!loadingCounts && <span className="consol-tab-badge">{counts[red.id]}</span>}
                 </button>
               ))}
             </div>
-
             <div className="form-group">
               <input
                 className="search-input"
                 type="text"
                 value={busqueda}
                 onChange={e => setBusqueda(e.target.value)}
-                placeholder="Buscar por nombre, telefono, email..."
+                placeholder="Buscar por nombre, teléfono, email..."
                 style={{ '--c1': redConsultaConfig.color }}
               />
             </div>
-
             {loadingPersonas ? (
               <div className="loading">Cargando personas...</div>
             ) : (
@@ -258,6 +280,156 @@ const ConsolidacionPanel = () => {
                 busqueda={busqueda}
                 onRefresh={() => loadPersonas(redConsulta)}
               />
+            )}
+          </div>
+        )}
+
+        {/* ── Vista: Estadísticas ── */}
+        {activeTab === 'estadisticas' && (
+          <div className="consol-stats-detail">
+            {/* Selector de red */}
+            <div className="consol-red-tabs">
+              {REDES.map(red => (
+                <button
+                  key={red.id}
+                  type="button"
+                  className={`consol-red-tab ${statsRed === red.id ? 'active' : ''}`}
+                  style={{ '--c1': red.color }}
+                  onClick={() => setStatsRed(red.id)}
+                >
+                  {red.nombre}
+                </button>
+              ))}
+            </div>
+
+            {loadingStats ? (
+              <div className="loading">Calculando estadísticas...</div>
+            ) : !currentStats ? (
+              <div className="loading">Sin datos aún</div>
+            ) : (
+              <>
+                {/* Ingresos */}
+                <div className="stats-section">
+                  <h3 className="stats-section-title" style={{ '--c1': statsRedConfig.color }}>
+                    Ingresos — {statsRedConfig.nombre}
+                  </h3>
+                  <div className="stats-kpi-row">
+                    <div className="stats-kpi">
+                      <span className="stats-kpi-num">{currentStats.total}</span>
+                      <span className="stats-kpi-label">Total</span>
+                    </div>
+                    <div className="stats-kpi">
+                      <span className="stats-kpi-num" style={{ color: statsRedConfig.color }}>{currentStats.nuevosEsteMes}</span>
+                      <span className="stats-kpi-label">Nuevos este mes</span>
+                    </div>
+                    <div className="stats-kpi">
+                      <span className="stats-kpi-num" style={{ color: statsRedConfig.color }}>{currentStats.nuevosUltimos30}</span>
+                      <span className="stats-kpi-label">Últimos 30 días</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Asistencia por servicio */}
+                <div className="stats-section">
+                  <h3 className="stats-section-title" style={{ '--c1': statsRedConfig.color }}>
+                    Asistencia por servicio (últimos 30 días)
+                  </h3>
+                  <div className="stats-servicio-grid">
+                    {Object.entries(currentStats.asistenciaPorServicio).map(([s, data]) => {
+                      const total = data.asistio + data.noAsistio;
+                      const pct = total > 0 ? Math.round((data.asistio / total) * 100) : 0;
+                      return (
+                        <div key={s} className="stats-servicio-card">
+                          <span className="stats-servicio-nombre">{SERVICIOS_LABEL[s]}</span>
+                          <span className="stats-servicio-num">{data.asistio}</span>
+                          <span className="stats-servicio-sub">asistieron de {total}</span>
+                          <div className="stats-bar-track">
+                            <div
+                              className="stats-bar-fill"
+                              style={{ width: `${pct}%`, background: statsRedConfig.color }}
+                            />
+                          </div>
+                          <span className="stats-pct">{pct}%</span>
+                          {data.noAsistio > 0 && (
+                            <span className="stats-no-asistio">{data.noAsistio} no asistieron</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Llamadas */}
+                <div className="stats-section">
+                  <h3 className="stats-section-title" style={{ '--c1': statsRedConfig.color }}>
+                    Llamadas
+                  </h3>
+                  <div className="stats-kpi-row">
+                    <div className="stats-kpi">
+                      <span className="stats-kpi-num">{currentStats.llamadasStats.total}</span>
+                      <span className="stats-kpi-label">Total llamadas</span>
+                    </div>
+                    <div className="stats-kpi">
+                      <span className="stats-kpi-num" style={{ color: '#059669' }}>{currentStats.llamadasStats.contesto}</span>
+                      <span className="stats-kpi-label">Contestaron</span>
+                    </div>
+                    <div className="stats-kpi">
+                      <span className="stats-kpi-num" style={{ color: '#D97706' }}>{currentStats.llamadasStats.no_contesto}</span>
+                      <span className="stats-kpi-label">No contestaron</span>
+                    </div>
+                    <div className="stats-kpi">
+                      <span className="stats-kpi-num" style={{ color: '#DC2626' }}>{currentStats.llamadasStats.desinteres}</span>
+                      <span className="stats-kpi-label">Desinterés</span>
+                    </div>
+                    <div className="stats-kpi">
+                      <span className="stats-kpi-num" style={{ color: '#526070' }}>{currentStats.sinContactar}</span>
+                      <span className="stats-kpi-label">Sin contactar</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Método de invitación */}
+                {Object.keys(currentStats.metodoCount).length > 0 && (
+                  <div className="stats-section">
+                    <h3 className="stats-section-title" style={{ '--c1': statsRedConfig.color }}>
+                      Método de invitación
+                    </h3>
+                    <div className="stats-metodo-list">
+                      {Object.entries(currentStats.metodoCount)
+                        .sort((a, b) => b[1] - a[1])
+                        .map(([metodo, count]) => (
+                          <div key={metodo} className="stats-metodo-row">
+                            <span className="stats-metodo-nombre">{metodo}</span>
+                            <div className="stats-metodo-bar-wrap">
+                              <div
+                                className="stats-metodo-bar"
+                                style={{
+                                  width: `${Math.round((count / currentStats.total) * 100)}%`,
+                                  background: statsRedConfig.color
+                                }}
+                              />
+                            </div>
+                            <span className="stats-metodo-count">{count}</span>
+                          </div>
+                        ))
+                      }
+                    </div>
+                  </div>
+                )}
+
+                {/* Inasistentes */}
+                <div className="stats-section">
+                  <h3 className="stats-section-title" style={{ '--c1': statsRedConfig.color }}>
+                    Inasistencias
+                  </h3>
+                  <div className="stats-kpi-row">
+                    <div className="stats-kpi">
+                      <span className="stats-kpi-num" style={{ color: '#DC2626' }}>{currentStats.inasistentesLegacy}</span>
+                      <span className="stats-kpi-label">Con 3+ ausencias</span>
+                    </div>
+                  </div>
+                </div>
+              </>
             )}
           </div>
         )}

@@ -7,7 +7,8 @@ import {
   query,
   orderBy,
   updateDoc,
-  increment
+  increment,
+  arrayUnion
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
@@ -77,6 +78,44 @@ export const resetAbsences = async (red, id) => {
   try {
     await updateDoc(doc(db, 'redes', red, 'personas', id), { ausencias: 0 });
     return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+};
+
+// servicio: 'sabado' | 'domingo' | 'miercoles'
+export const addAttendanceRecord = async (red, personId, { servicio, asistio }) => {
+  const record = {
+    id: Date.now(),
+    fecha: new Date().toISOString().split('T')[0],
+    servicio,
+    asistio,
+    ts: new Date().toISOString()
+  };
+  try {
+    await updateDoc(doc(db, 'redes', red, 'personas', personId), {
+      asistencias: arrayUnion(record)
+    });
+    return { success: true, record };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+};
+
+// resultado: 'contesto' | 'no_contesto' | 'desinteres'
+export const addCallRecord = async (red, personId, { resultado }) => {
+  const record = {
+    fecha: new Date().toISOString().split('T')[0],
+    resultado,
+    ts: new Date().toISOString()
+  };
+  try {
+    await updateDoc(doc(db, 'redes', red, 'personas', personId), {
+      llamadas: arrayUnion(record),
+      lastCallDate: record.ts,
+      lastCallResult: resultado
+    });
+    return { success: true, record };
   } catch (error) {
     return { success: false, error: error.message };
   }

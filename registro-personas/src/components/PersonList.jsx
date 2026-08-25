@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { getAllPersons, deletePerson, markAbsence, resetAbsences, updatePerson } from '../services/personService';
+import { getAllPersons, deletePerson } from '../services/personService';
 import { getPersonasNeedingCall } from '../services/callAlertService';
 import PersonCard from './PersonCard';
 
@@ -37,37 +37,6 @@ const PersonList = ({ red, refresh, onEdit }) => {
     if (result.success) setPersons(prev => prev.filter(p => p.id !== id));
   };
 
-  const handleAbsence = async (id) => {
-    const result = await markAbsence(red, id);
-    if (result.success) {
-      setPersons(prev => prev.map(p =>
-        p.id === id ? { ...p, ausencias: (p.ausencias || 0) + 1 } : p
-      ));
-    }
-  };
-
-  const handleResetAbsences = async (id) => {
-    if (!window.confirm('Reiniciar el contador de ausencias?')) return;
-    const result = await resetAbsences(red, id);
-    if (result.success) {
-      setPersons(prev => prev.map(p =>
-        p.id === id ? { ...p, ausencias: 0 } : p
-      ));
-    }
-  };
-
-  const handleMarkCalled = async (id) => {
-    const result = await updatePerson(red, id, {
-      lastCallDate: new Date().toISOString(),
-      callConfirmed: true
-    });
-    if (result.success) {
-      setPersons(prev => prev.map(p =>
-        p.id === id ? { ...p, lastCallDate: new Date().toISOString(), callConfirmed: true } : p
-      ));
-    }
-  };
-
   const opcionesCargo = useMemo(() => {
     const seen = new Set();
     const nombres = [];
@@ -75,10 +44,7 @@ const PersonList = ({ red, refresh, onEdit }) => {
       const raw = p.aCargoDe?.trim();
       if (!raw) return;
       const key = raw.toLowerCase();
-      if (!seen.has(key)) {
-        seen.add(key);
-        nombres.push(raw);
-      }
+      if (!seen.has(key)) { seen.add(key); nombres.push(raw); }
     });
     return nombres.sort();
   }, [persons]);
@@ -92,19 +58,16 @@ const PersonList = ({ red, refresh, onEdit }) => {
         person.email?.toLowerCase().includes(search.toLowerCase()) ||
         person.telefono?.toLowerCase().includes(search.toLowerCase()) ||
         String(person.edad)?.includes(search);
-
       const matchCargo =
         !filtroCargo ||
         person.aCargoDe?.trim().toLowerCase() === filtroCargo.toLowerCase();
-
       return matchSearch && matchCargo;
     });
   }, [search, filtroCargo, persons]);
 
   const getBirthdayLabel = (person) => {
-    if (person.mesCumple && person.diaCumple) {
+    if (person.mesCumple && person.diaCumple)
       return { mes: parseInt(person.mesCumple), dia: parseInt(person.diaCumple) };
-    }
     if (person.fechaNacimiento) {
       const parts = person.fechaNacimiento.split('-');
       return { mes: parseInt(parts[1]), dia: parseInt(parts[2]) };
@@ -116,8 +79,7 @@ const PersonList = ({ red, refresh, onEdit }) => {
     const today = new Date();
     return persons.filter(p => {
       const b = getBirthdayLabel(p);
-      if (!b) return false;
-      return b.mes === today.getMonth() + 1 && b.dia === today.getDate();
+      return b && b.mes === today.getMonth() + 1 && b.dia === today.getDate();
     });
   }, [persons]);
 
@@ -125,11 +87,8 @@ const PersonList = ({ red, refresh, onEdit }) => {
     const today = new Date();
     const day = today.getDay();
     const diffToMonday = day === 0 ? -6 : 1 - day;
-    const monday = new Date(today);
-    monday.setDate(today.getDate() + diffToMonday);
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-
+    const monday = new Date(today); monday.setDate(today.getDate() + diffToMonday);
+    const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
     return persons.filter(p => {
       const b = getBirthdayLabel(p);
       if (!b) return false;
@@ -138,17 +97,21 @@ const PersonList = ({ red, refresh, onEdit }) => {
     });
   }, [persons]);
 
-  const personasAusentes = useMemo(() =>
-    persons.filter(p => (p.ausencias || 0) >= AUSENCIAS_ALERTA)
-  , [persons]);
+  // Alertas de llamadas 48h (basadas en lastCallDate)
+  const personasNecesitanLlamada = useMemo(() => getPersonasNeedingCall(persons), [persons]);
 
-  const personasNecesitanLlamada = useMemo(() =>
-    getPersonasNeedingCall(persons)
-  , [persons]);
+  // Alertas de inasistencia (legacy ausencias >= 3 + historia reciente)
+  const personasAusentes = useMemo(() => {
+    return persons.filter(p => {
+      const legacy = (p.ausencias || 0) >= AUSENCIAS_ALERTA;
+      // también por historial: últimas 4 asistencias todas con asistio=false
+      const hist = [...(p.asistencias || [])].sort((a, b) => b.id - a.id).slice(0, 4);
+      const recurrenteNoAsiste = hist.length >= 3 && hist.every(a => !a.asistio);
+      return legacy || recurrenteNoAsiste;
+    });
+  }, [persons]);
 
-  useEffect(() => {
-    loadPersons();
-  }, [refresh, red]);
+  useEffect(() => { loadPersons(); }, [refresh, red]);
 
   if (loading) return <p className="loading">Cargando...</p>;
   if (error) return <p className="error-message">{error}</p>;
@@ -158,7 +121,7 @@ const PersonList = ({ red, refresh, onEdit }) => {
       <div className="form-group">
         <input
           type="text"
-          placeholder="Buscar por nombre, telefono..."
+          placeholder="Buscar por nombre, teléfono..."
           value={search}
           onChange={e => setSearch(e.target.value)}
           className="search-input"
@@ -167,15 +130,9 @@ const PersonList = ({ red, refresh, onEdit }) => {
 
       {opcionesCargo.length > 0 && (
         <div className="form-group">
-          <select
-            className="filtro-cargo-select"
-            value={filtroCargo}
-            onChange={e => setFiltroCargo(e.target.value)}
-          >
+          <select className="filtro-cargo-select" value={filtroCargo} onChange={e => setFiltroCargo(e.target.value)}>
             <option value="">Todos — A cargo de</option>
-            {opcionesCargo.map(nombre => (
-              <option key={nombre} value={nombre}>{nombre}</option>
-            ))}
+            {opcionesCargo.map(nombre => <option key={nombre} value={nombre}>{nombre}</option>)}
           </select>
         </div>
       )}
@@ -187,11 +144,8 @@ const PersonList = ({ red, refresh, onEdit }) => {
       {/* Alerta de llamadas (48 hrs) */}
       {personasNecesitanLlamada.length > 0 && (
         <div className="call-alert">
-          <button
-            className="call-alert-header"
-            onClick={() => setCallAlertOpen(o => !o)}
-          >
-            <span>{personasNecesitanLlamada.length} persona{personasNecesitanLlamada.length > 1 ? 's' : ''} necesita contacto (48+ hrs)</span>
+          <button className="call-alert-header" onClick={() => setCallAlertOpen(o => !o)}>
+            <span>{personasNecesitanLlamada.length} persona{personasNecesitanLlamada.length > 1 ? 's' : ''} sin contacto en 48+ hrs</span>
             <span className="alert-toggle">{callAlertOpen ? 'Ocultar' : 'Ver'}</span>
           </button>
           {callAlertOpen && (
@@ -202,21 +156,11 @@ const PersonList = ({ red, refresh, onEdit }) => {
                     <span className="call-alert-nombre">{p.nombre} {p.apellido}</span>
                     {p.aCargoDe && <span className="call-alert-cargo">A cargo de: {p.aCargoDe}</span>}
                     {p.lastCallDate && (
-                      <span className="call-alert-date">Ultima llamada: {new Date(p.lastCallDate).toLocaleDateString('es-CO')}</span>
+                      <span className="call-alert-date">Ultima: {new Date(p.lastCallDate).toLocaleDateString('es-CO')}</span>
                     )}
                   </div>
                   <div className="call-alert-actions">
-                    {p.telefono && (
-                      <a className="btn-llamar" href={`tel:${p.telefono}`}>
-                        Llamar
-                      </a>
-                    )}
-                    <button
-                      className="btn-confirmar-llamada"
-                      onClick={() => handleMarkCalled(p.id)}
-                    >
-                      Ya llame
-                    </button>
+                    {p.telefono && <a className="btn-llamar" href={`tel:${p.telefono}`}>Llamar</a>}
                   </div>
                 </div>
               ))}
@@ -225,14 +169,11 @@ const PersonList = ({ red, refresh, onEdit }) => {
         </div>
       )}
 
-      {/* Alerta de ausencias */}
+      {/* Alerta de inasistencias */}
       {personasAusentes.length > 0 && (
         <div className="ausentes-alert">
-          <button
-            className="ausentes-alert-header"
-            onClick={() => setAlertOpen(o => !o)}
-          >
-            <span>{personasAusentes.length} persona{personasAusentes.length > 1 ? 's' : ''} con {AUSENCIAS_ALERTA}+ ausencias</span>
+          <button className="ausentes-alert-header" onClick={() => setAlertOpen(o => !o)}>
+            <span>{personasAusentes.length} persona{personasAusentes.length > 1 ? 's' : ''} con inasistencia frecuente</span>
             <span className="alert-toggle">{alertOpen ? 'Ocultar' : 'Ver'}</span>
           </button>
           {alertOpen && (
@@ -244,12 +185,7 @@ const PersonList = ({ red, refresh, onEdit }) => {
                     {p.aCargoDe && <span className="ausente-cargo">A cargo de: {p.aCargoDe}</span>}
                   </div>
                   <div className="ausente-right">
-                    <span className="ausente-count">{p.ausencias} aus.</span>
-                    {p.telefono && (
-                      <a className="ausente-tel" href={`tel:${p.telefono}`}>
-                        {p.telefono}
-                      </a>
-                    )}
+                    {p.telefono && <a className="ausente-tel" href={`tel:${p.telefono}`}>{p.telefono}</a>}
                   </div>
                 </div>
               ))}
@@ -258,27 +194,24 @@ const PersonList = ({ red, refresh, onEdit }) => {
         </div>
       )}
 
-      {/* Cumpleanos hoy */}
+      {/* Cumpleaños hoy */}
       {birthdaysToday.length > 0 && (
         <p className="birthday-counter">
-          Cumpleanos HOY: {birthdaysToday.map(p => p.nombre).join(', ')}
+          Cumpleaños HOY: {birthdaysToday.map(p => p.nombre).join(', ')}
         </p>
       )}
 
-      {/* Cumpleanos semana */}
+      {/* Cumpleaños semana */}
       {birthdaysThisWeek.length > 0 && (
         <>
-          <p className="birthday-counter">
-            Cumpleanos esta semana: {birthdaysThisWeek.length}
-          </p>
+          <p className="birthday-counter">Cumpleaños esta semana: {birthdaysThisWeek.length}</p>
           <div className="birthday-box">
-            <h4 className="nameBirthday">Cumpleanos de esta semana:</h4>
+            <h4 className="nameBirthday">Esta semana:</h4>
             {birthdaysThisWeek.map(p => {
               const b = getBirthdayLabel(p);
-              const mesLabel = b ? MESES[b.mes] : '';
               return (
                 <p className="nameBirthday" key={p.id}>
-                  {p.nombre} {p.apellido} — {b?.dia} de {mesLabel}
+                  {p.nombre} {p.apellido} — {b?.dia} de {MESES[b?.mes || 0]}
                 </p>
               );
             })}
@@ -291,11 +224,10 @@ const PersonList = ({ red, refresh, onEdit }) => {
           <PersonCard
             key={person.id}
             person={person}
+            red={red}
             onDelete={() => handleDelete(person.id)}
             onEdit={() => onEdit(person)}
-            onAbsence={handleAbsence}
-            onResetAbsences={handleResetAbsences}
-            onMarkCalled={handleMarkCalled}
+            onUpdate={loadPersons}
           />
         ))}
       </div>

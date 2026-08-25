@@ -6,12 +6,18 @@ const MESES = [
   'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'
 ];
 
+const METODOS_INVITACION = [
+  'Publicidad', 'Volante', 'Familiar', 'Amigo', 'Redes sociales', 'Otro'
+];
+
 const diasPorMes = (mes) => {
   const dias30 = [4, 6, 9, 11];
   if (mes === 2) return 29;
   if (dias30.includes(mes)) return 30;
   return 31;
 };
+
+const todayISO = () => new Date().toISOString().split('T')[0];
 
 const RegisterForm = ({ red, selectedPerson, onFinish }) => {
   const [form, setForm] = useState({
@@ -22,7 +28,10 @@ const RegisterForm = ({ red, selectedPerson, onFinish }) => {
     telefono: '',
     mesCumple: '',
     diaCumple: '',
-    aCargoDe: ''
+    aCargoDe: '',
+    metodoInvitacion: '',
+    fechaIngreso: todayISO(),
+    prayerRequest: ''
   });
 
   useEffect(() => {
@@ -48,8 +57,13 @@ const RegisterForm = ({ red, selectedPerson, onFinish }) => {
         telefono: selectedPerson.telefono || '',
         mesCumple: mes,
         diaCumple: dia,
-        aCargoDe: selectedPerson.aCargoDe || ''
+        aCargoDe: selectedPerson.aCargoDe || '',
+        metodoInvitacion: selectedPerson.metodoInvitacion || '',
+        fechaIngreso: selectedPerson.fechaIngreso || todayISO(),
+        prayerRequest: selectedPerson.prayerRequest || ''
       });
+    } else {
+      setForm(f => ({ ...f, fechaIngreso: todayISO() }));
     }
   }, [selectedPerson]);
 
@@ -72,10 +86,15 @@ const RegisterForm = ({ red, selectedPerson, onFinish }) => {
       await addPerson(red, personData);
     }
     onFinish();
-    setForm({ nombre: '', apellido: '', edad: '', email: '', telefono: '', mesCumple: '', diaCumple: '', aCargoDe: '' });
+    setForm({
+      nombre: '', apellido: '', edad: '', email: '', telefono: '',
+      mesCumple: '', diaCumple: '', aCargoDe: '',
+      metodoInvitacion: '', fechaIngreso: todayISO(), prayerRequest: ''
+    });
   };
 
   const diasDisponibles = form.mesCumple ? diasPorMes(parseInt(form.mesCumple)) : 31;
+  const set = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }));
 
   return (
     <div className="register-form">
@@ -84,48 +103,37 @@ const RegisterForm = ({ red, selectedPerson, onFinish }) => {
       <form onSubmit={handleSubmit}>
         <div className="form-group">
           <label>Nombre</label>
-          <input value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} required />
+          <input value={form.nombre} onChange={set('nombre')} required placeholder="Nombre" />
         </div>
 
         <div className="form-group">
           <label>Apellido</label>
-          <input value={form.apellido} onChange={e => setForm({ ...form, apellido: e.target.value })} required />
-        </div>
-
-        <div className="form-group">
-          <label>Correo electrónico</label>
-          <input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
+          <input value={form.apellido} onChange={set('apellido')} required placeholder="Apellido" />
         </div>
 
         <div className="form-group">
           <label>Teléfono</label>
-          <input value={form.telefono} onChange={e => setForm({ ...form, telefono: e.target.value })} required />
+          <input value={form.telefono} onChange={set('telefono')} required placeholder="+57 300 000 0000" type="tel" />
+        </div>
+
+        <div className="form-group">
+          <label>Correo electrónico</label>
+          <input type="email" value={form.email} onChange={set('email')} placeholder="correo@ejemplo.com" />
         </div>
 
         <div className="form-group">
           <label>Edad</label>
-          <input type="number" value={form.edad} onChange={e => setForm({ ...form, edad: e.target.value })} required />
+          <input type="number" value={form.edad} onChange={set('edad')} required min="1" max="120" placeholder="25" />
         </div>
 
         <div className="form-group">
           <label>Cumpleaños</label>
           <div className="cumple-row">
-            <select
-              value={form.mesCumple}
-              onChange={e => setForm({ ...form, mesCumple: e.target.value, diaCumple: '' })}
-              required
-            >
+            <select value={form.mesCumple} onChange={e => setForm(f => ({ ...f, mesCumple: e.target.value, diaCumple: '' }))} required>
               <option value="">Mes</option>
-              {MESES.map((m, i) => (
-                <option key={i+1} value={i+1}>{m}</option>
-              ))}
+              {MESES.map((m, i) => <option key={i+1} value={i+1}>{m}</option>)}
             </select>
-            <select
-              value={form.diaCumple}
-              onChange={e => setForm({ ...form, diaCumple: e.target.value })}
-              required
-              disabled={!form.mesCumple}
-            >
+            <select value={form.diaCumple} onChange={set('diaCumple')} required disabled={!form.mesCumple}>
               <option value="">Día</option>
               {Array.from({ length: diasDisponibles }, (_, i) => i + 1).map(d => (
                 <option key={d} value={d}>{d}</option>
@@ -135,12 +143,26 @@ const RegisterForm = ({ red, selectedPerson, onFinish }) => {
         </div>
 
         <div className="form-group">
+          <label>Fecha de ingreso</label>
+          <input type="date" value={form.fechaIngreso} onChange={set('fechaIngreso')} />
+        </div>
+
+        <div className="form-group">
+          <label>Método de invitación</label>
+          <select value={form.metodoInvitacion} onChange={set('metodoInvitacion')}>
+            <option value="">Seleccionar...</option>
+            {METODOS_INVITACION.map(m => <option key={m} value={m}>{m}</option>)}
+          </select>
+        </div>
+
+        <div className="form-group">
           <label>A cargo de</label>
-          <input
-            value={form.aCargoDe}
-            onChange={e => setForm({ ...form, aCargoDe: e.target.value })}
-            placeholder="Nombre del responsable"
-          />
+          <input value={form.aCargoDe} onChange={set('aCargoDe')} placeholder="Nombre del responsable" />
+        </div>
+
+        <div className="form-group">
+          <label>Petición de oración</label>
+          <textarea value={form.prayerRequest} onChange={set('prayerRequest')} rows="2" placeholder="(opcional)" />
         </div>
 
         <button className="btn-submit">
