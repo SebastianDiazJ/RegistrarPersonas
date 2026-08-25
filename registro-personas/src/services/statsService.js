@@ -1,10 +1,22 @@
-const thirtyDaysAgo = () => new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-
 const SERVICIOS = ['sabado', 'domingo', 'miercoles'];
 
-export const computeRedStats = (personas) => {
+export const computeRedStats = (personas, { desde, hasta } = {}) => {
   const now = new Date();
-  const cutoff = thirtyDaysAgo();
+
+  // Rango de fechas
+  const cutoffFrom = desde
+    ? new Date(desde)
+    : new Date(now - 30 * 24 * 60 * 60 * 1000);
+  const cutoffTo = hasta
+    ? new Date(hasta + 'T23:59:59')
+    : now;
+
+  // Nuevos en el rango
+  const nuevosEnRango = personas.filter(p => {
+    if (!p.fechaIngreso) return false;
+    const d = new Date(p.fechaIngreso);
+    return d >= cutoffFrom && d <= cutoffTo;
+  }).length;
 
   // Nuevos este mes
   const nuevosEsteMes = personas.filter(p => {
@@ -13,26 +25,21 @@ export const computeRedStats = (personas) => {
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   }).length;
 
-  // Últimos 30 días
-  const nuevosUltimos30 = personas.filter(p => {
-    if (!p.fechaIngreso) return false;
-    return new Date(p.fechaIngreso) >= cutoff;
-  }).length;
-
-  // Asistencia por servicio (últimos 30 días)
+  // Asistencia por servicio en el rango
   const asistenciaPorServicio = {};
   SERVICIOS.forEach(s => { asistenciaPorServicio[s] = { asistio: 0, noAsistio: 0 }; });
 
   personas.forEach(p => {
     (p.asistencias || []).forEach(a => {
       if (!SERVICIOS.includes(a.servicio)) return;
-      if (new Date(a.fecha) < cutoff) return;
+      const d = new Date(a.fecha);
+      if (d < cutoffFrom || d > cutoffTo) return;
       if (a.asistio) asistenciaPorServicio[a.servicio].asistio++;
       else asistenciaPorServicio[a.servicio].noAsistio++;
     });
   });
 
-  // Llamadas stats (total histórico)
+  // Llamadas stats (histórico completo)
   const llamadasStats = { total: 0, contesto: 0, no_contesto: 0, desinteres: 0 };
   personas.forEach(p => {
     (p.llamadas || []).forEach(l => {
@@ -41,10 +48,7 @@ export const computeRedStats = (personas) => {
     });
   });
 
-  // Personas sin contactar nunca
   const sinContactar = personas.filter(p => !p.lastCallDate).length;
-
-  // Inasistencias (personas con 3+ ausencias legacy O con mas de 40% no-asistencias en historial)
   const inasistentesLegacy = personas.filter(p => (p.ausencias || 0) >= 3).length;
 
   // Método de invitación
@@ -57,11 +61,13 @@ export const computeRedStats = (personas) => {
   return {
     total: personas.length,
     nuevosEsteMes,
-    nuevosUltimos30,
+    nuevosEnRango,
     asistenciaPorServicio,
     llamadasStats,
     sinContactar,
     inasistentesLegacy,
-    metodoCount
+    metodoCount,
+    rangoDesde: cutoffFrom.toISOString().split('T')[0],
+    rangoHasta: cutoffTo.toISOString().split('T')[0]
   };
 };

@@ -13,47 +13,59 @@ const REDES = [
 ];
 
 const METODOS_INVITACION = ['Publicidad', 'Volante', 'Familiar', 'Amigo', 'Redes sociales', 'Otro'];
+const SERVICIOS_LABEL    = { sabado: 'Sábado', domingo: 'Domingo', miercoles: 'Miércoles' };
+
+const todayISO = () => new Date().toISOString().split('T')[0];
+const thirtyDaysAgoISO = () => new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
 const EMPTY_FORM = {
   nombre: '', apellido: '', telefono: '', aCargoDe: '',
   email: '', prayerRequest: '', metodoInvitacion: '',
-  fechaIngreso: new Date().toISOString().split('T')[0]
+  fechaIngreso: todayISO()
 };
-
-const SERVICIOS_LABEL = { sabado: 'Sábado', domingo: 'Domingo', miercoles: 'Miércoles' };
 
 const ConsolidacionPanel = () => {
   const navigate = useNavigate();
   const { logoutAdmin } = useAuth();
 
   const [activeTab, setActiveTab] = useState('registrar');
+
+  // Conteos rápidos
   const [counts, setCounts]           = useState({ xtreme: 0, parejas: 0, '360': 0, senior: 0 });
   const [loadingCounts, setLoadingCounts] = useState(true);
 
+  // Registro
   const [selectedRed, setSelectedRed] = useState('xtreme');
   const [form, setForm]               = useState(EMPTY_FORM);
   const [submitting, setSubmitting]   = useState(false);
   const [feedback, setFeedback]       = useState(null);
 
-  const [redConsulta, setRedConsulta]           = useState('xtreme');
-  const [personas, setPersonas]                 = useState([]);
-  const [loadingPersonas, setLoadingPersonas]   = useState(false);
-  const [busqueda, setBusqueda]                 = useState('');
+  // Ver personas
+  const [redConsulta, setRedConsulta]         = useState('xtreme');
+  const [personas, setPersonas]               = useState([]);
+  const [loadingPersonas, setLoadingPersonas] = useState(false);
+  const [busqueda, setBusqueda]               = useState('');
+  const [filtroServicio, setFiltroServicio]   = useState('todos');
+  const [filtroFecha, setFiltroFecha]         = useState('');
 
-  // Stats
-  const [statsRed, setStatsRed]           = useState('xtreme');
+  // Estadísticas
+  const [statsRed, setStatsRed]               = useState('xtreme');
   const [allPersonasStats, setAllPersonasStats] = useState({});
-  const [loadingStats, setLoadingStats]   = useState(false);
+  const [loadingStats, setLoadingStats]       = useState(false);
+  const [statsDesde, setStatsDesde]           = useState(thirtyDaysAgoISO());
+  const [statsHasta, setStatsHasta]           = useState(todayISO());
+  const [rawPersonasStats, setRawPersonasStats] = useState({});
 
   useEffect(() => { loadCounts(); }, []);
+  useEffect(() => { if (activeTab === 'consultar') loadPersonas(redConsulta); }, [activeTab, redConsulta]);
+  useEffect(() => { if (activeTab === 'estadisticas') loadAllStats(); }, [activeTab]);
 
+  // Recalcular stats cuando cambia rango de fechas
   useEffect(() => {
-    if (activeTab === 'consultar') loadPersonas(redConsulta);
-  }, [activeTab, redConsulta]);
-
-  useEffect(() => {
-    if (activeTab === 'estadisticas') loadAllStats();
-  }, [activeTab]);
+    if (!rawPersonasStats[statsRed]) return;
+    const stats = computeRedStats(rawPersonasStats[statsRed], { desde: statsDesde, hasta: statsHasta });
+    setAllPersonasStats(prev => ({ ...prev, [statsRed]: stats }));
+  }, [statsDesde, statsHasta, statsRed, rawPersonasStats]);
 
   const loadCounts = async () => {
     setLoadingCounts(true);
@@ -75,11 +87,16 @@ const ConsolidacionPanel = () => {
   const loadAllStats = async () => {
     setLoadingStats(true);
     const results = await Promise.all(REDES.map(r => getAllPersons(r.id)));
-    const map = {};
+    const rawMap = {};
+    const statsMap = {};
     REDES.forEach((r, i) => {
-      if (results[i].success) map[r.id] = computeRedStats(results[i].data);
+      if (results[i].success) {
+        rawMap[r.id]   = results[i].data;
+        statsMap[r.id] = computeRedStats(results[i].data, { desde: statsDesde, hasta: statsHasta });
+      }
     });
-    setAllPersonasStats(map);
+    setRawPersonasStats(rawMap);
+    setAllPersonasStats(statsMap);
     setLoadingStats(false);
   };
 
@@ -99,8 +116,7 @@ const ConsolidacionPanel = () => {
       lastCallDate: null, callConfirmed: false
     });
     if (result.success) {
-      const redNombre = REDES.find(r => r.id === selectedRed).nombre;
-      setFeedback({ type: 'success', msg: `${form.nombre} registrado/a en ${redNombre}` });
+      setFeedback({ type: 'success', msg: `${form.nombre} registrado/a en ${REDES.find(r => r.id === selectedRed).nombre}` });
       setForm(EMPTY_FORM);
       loadCounts();
     } else {
@@ -110,12 +126,21 @@ const ConsolidacionPanel = () => {
   };
 
   const handleLogout = () => { logoutAdmin(); navigate('/'); };
+  const handleStatsRedChange = (redId) => {
+    setStatsRed(redId);
+    if (rawPersonasStats[redId]) {
+      setAllPersonasStats(prev => ({
+        ...prev,
+        [redId]: computeRedStats(rawPersonasStats[redId], { desde: statsDesde, hasta: statsHasta })
+      }));
+    }
+  };
 
-  const total     = Object.values(counts).reduce((sum, c) => sum + c, 0);
-  const redConfig = REDES.find(r => r.id === selectedRed);
+  const total           = Object.values(counts).reduce((sum, c) => sum + c, 0);
+  const redConfig       = REDES.find(r => r.id === selectedRed);
   const redConsultaConfig = REDES.find(r => r.id === redConsulta);
-  const currentStats = allPersonasStats[statsRed];
-  const statsRedConfig = REDES.find(r => r.id === statsRed);
+  const currentStats    = allPersonasStats[statsRed];
+  const statsRedConfig  = REDES.find(r => r.id === statsRed);
 
   const personasFiltradas = useMemo(() => {
     const q = busqueda.toLowerCase().trim();
@@ -123,9 +148,7 @@ const ConsolidacionPanel = () => {
     return personas.filter(p =>
       `${p.nombre} ${p.apellido}`.toLowerCase().includes(q) ||
       (p.telefono || '').includes(q) ||
-      (p.email || '').toLowerCase().includes(q) ||
-      (p.aCargoDe || '').toLowerCase().includes(q) ||
-      (p.prayerRequest || '').toLowerCase().includes(q)
+      (p.email || '').toLowerCase().includes(q)
     );
   }, [personas, busqueda]);
 
@@ -160,8 +183,8 @@ const ConsolidacionPanel = () => {
         {/* Tabs principales */}
         <div className="consol-main-tabs">
           {[
-            { id: 'registrar',   label: 'Registrar persona' },
-            { id: 'consultar',   label: 'Ver personas' },
+            { id: 'registrar',    label: 'Registrar persona' },
+            { id: 'consultar',    label: 'Ver personas' },
             { id: 'estadisticas', label: 'Estadísticas' }
           ].map(t => (
             <button
@@ -174,7 +197,7 @@ const ConsolidacionPanel = () => {
           ))}
         </div>
 
-        {/* ── Vista: Registrar ── */}
+        {/* ── Registrar ── */}
         {activeTab === 'registrar' && (
           <div className="consol-register-card">
             <h2 className="consol-card-title">Registrar nueva persona</h2>
@@ -191,7 +214,6 @@ const ConsolidacionPanel = () => {
                 </button>
               ))}
             </div>
-
             <form onSubmit={handleSubmit} className="consol-form" style={{ '--c1': redConfig.color }}>
               <div className="consol-fields-grid">
                 <div className="form-group">
@@ -230,7 +252,6 @@ const ConsolidacionPanel = () => {
                   <textarea value={form.prayerRequest} onChange={handleChange('prayerRequest')} placeholder="(opcional)" rows="2" autoComplete="off" />
                 </div>
               </div>
-
               {feedback && (
                 <div className={feedback.type === 'success' ? 'consol-feedback-ok' : 'login-error'}>
                   {feedback.msg}
@@ -243,9 +264,10 @@ const ConsolidacionPanel = () => {
           </div>
         )}
 
-        {/* ── Vista: Consultar ── */}
+        {/* ── Ver personas ── */}
         {activeTab === 'consultar' && (
           <div className="consol-consulta-card">
+            {/* Selector red */}
             <div className="consol-red-tabs">
               {REDES.map(red => (
                 <button
@@ -253,23 +275,55 @@ const ConsolidacionPanel = () => {
                   type="button"
                   className={`consol-red-tab ${redConsulta === red.id ? 'active' : ''}`}
                   style={{ '--c1': red.color }}
-                  onClick={() => { setRedConsulta(red.id); setBusqueda(''); }}
+                  onClick={() => { setRedConsulta(red.id); setBusqueda(''); setFiltroServicio('todos'); setFiltroFecha(''); }}
                 >
                   {red.nombre}
                   {!loadingCounts && <span className="consol-tab-badge">{counts[red.id]}</span>}
                 </button>
               ))}
             </div>
-            <div className="form-group">
-              <input
-                className="search-input"
-                type="text"
-                value={busqueda}
-                onChange={e => setBusqueda(e.target.value)}
-                placeholder="Buscar por nombre, teléfono, email..."
-                style={{ '--c1': redConsultaConfig.color }}
-              />
+
+            {/* Filtros */}
+            <div className="consulta-filtros">
+              <div className="form-group" style={{ flex: '2', minWidth: '180px' }}>
+                <label>Buscar</label>
+                <input
+                  className="search-input"
+                  type="text"
+                  value={busqueda}
+                  onChange={e => setBusqueda(e.target.value)}
+                  placeholder="Nombre, teléfono, email..."
+                  style={{ '--c1': redConsultaConfig.color }}
+                />
+              </div>
+              <div className="form-group" style={{ flex: '1', minWidth: '130px' }}>
+                <label>Servicio asistido</label>
+                <select className="filtro-cargo-select" value={filtroServicio} onChange={e => setFiltroServicio(e.target.value)}>
+                  <option value="todos">Todos</option>
+                  <option value="sabado">Sábado</option>
+                  <option value="domingo">Domingo</option>
+                  <option value="miercoles">Miércoles</option>
+                </select>
+              </div>
+              <div className="form-group" style={{ flex: '1', minWidth: '140px' }}>
+                <label>Fecha asistencia</label>
+                <input
+                  className="filtro-cargo-select"
+                  type="date"
+                  value={filtroFecha}
+                  onChange={e => setFiltroFecha(e.target.value)}
+                />
+              </div>
+              {(filtroServicio !== 'todos' || filtroFecha) && (
+                <button
+                  className="btn-clear-filtros"
+                  onClick={() => { setFiltroServicio('todos'); setFiltroFecha(''); }}
+                >
+                  Limpiar filtros
+                </button>
+              )}
             </div>
+
             {loadingPersonas ? (
               <div className="loading">Cargando personas...</div>
             ) : (
@@ -278,16 +332,18 @@ const ConsolidacionPanel = () => {
                 red={redConsulta}
                 redConfig={redConsultaConfig}
                 busqueda={busqueda}
+                filtroServicio={filtroServicio !== 'todos' ? filtroServicio : ''}
+                filtroFecha={filtroFecha}
                 onRefresh={() => loadPersonas(redConsulta)}
               />
             )}
           </div>
         )}
 
-        {/* ── Vista: Estadísticas ── */}
+        {/* ── Estadísticas ── */}
         {activeTab === 'estadisticas' && (
           <div className="consol-stats-detail">
-            {/* Selector de red */}
+            {/* Selector red */}
             <div className="consol-red-tabs">
               {REDES.map(red => (
                 <button
@@ -295,11 +351,30 @@ const ConsolidacionPanel = () => {
                   type="button"
                   className={`consol-red-tab ${statsRed === red.id ? 'active' : ''}`}
                   style={{ '--c1': red.color }}
-                  onClick={() => setStatsRed(red.id)}
+                  onClick={() => handleStatsRedChange(red.id)}
                 >
                   {red.nombre}
                 </button>
               ))}
+            </div>
+
+            {/* Filtro de fechas */}
+            <div className="stats-date-filter">
+              <span className="stats-date-label">Período:</span>
+              <div className="form-group" style={{ margin: 0, minWidth: '140px' }}>
+                <label>Desde</label>
+                <input type="date" value={statsDesde} onChange={e => setStatsDesde(e.target.value)} className="filtro-cargo-select" />
+              </div>
+              <div className="form-group" style={{ margin: 0, minWidth: '140px' }}>
+                <label>Hasta</label>
+                <input type="date" value={statsHasta} onChange={e => setStatsHasta(e.target.value)} className="filtro-cargo-select" />
+              </div>
+              <button
+                className="btn-clear-filtros"
+                onClick={() => { setStatsDesde(thirtyDaysAgoISO()); setStatsHasta(todayISO()); }}
+              >
+                Últimos 30 días
+              </button>
             </div>
 
             {loadingStats ? (
@@ -310,7 +385,7 @@ const ConsolidacionPanel = () => {
               <>
                 {/* Ingresos */}
                 <div className="stats-section">
-                  <h3 className="stats-section-title" style={{ '--c1': statsRedConfig.color }}>
+                  <h3 className="stats-section-title" style={{ color: statsRedConfig.color, borderColor: statsRedConfig.color }}>
                     Ingresos — {statsRedConfig.nombre}
                   </h3>
                   <div className="stats-kpi-row">
@@ -323,31 +398,28 @@ const ConsolidacionPanel = () => {
                       <span className="stats-kpi-label">Nuevos este mes</span>
                     </div>
                     <div className="stats-kpi">
-                      <span className="stats-kpi-num" style={{ color: statsRedConfig.color }}>{currentStats.nuevosUltimos30}</span>
-                      <span className="stats-kpi-label">Últimos 30 días</span>
+                      <span className="stats-kpi-num" style={{ color: statsRedConfig.color }}>{currentStats.nuevosEnRango}</span>
+                      <span className="stats-kpi-label">En el período</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Asistencia por servicio */}
                 <div className="stats-section">
-                  <h3 className="stats-section-title" style={{ '--c1': statsRedConfig.color }}>
-                    Asistencia por servicio (últimos 30 días)
+                  <h3 className="stats-section-title" style={{ color: statsRedConfig.color, borderColor: statsRedConfig.color }}>
+                    Asistencia por servicio
                   </h3>
                   <div className="stats-servicio-grid">
                     {Object.entries(currentStats.asistenciaPorServicio).map(([s, data]) => {
                       const total = data.asistio + data.noAsistio;
-                      const pct = total > 0 ? Math.round((data.asistio / total) * 100) : 0;
+                      const pct   = total > 0 ? Math.round((data.asistio / total) * 100) : 0;
                       return (
                         <div key={s} className="stats-servicio-card">
                           <span className="stats-servicio-nombre">{SERVICIOS_LABEL[s]}</span>
                           <span className="stats-servicio-num">{data.asistio}</span>
-                          <span className="stats-servicio-sub">asistieron de {total}</span>
+                          <span className="stats-servicio-sub">asistieron de {total} registros</span>
                           <div className="stats-bar-track">
-                            <div
-                              className="stats-bar-fill"
-                              style={{ width: `${pct}%`, background: statsRedConfig.color }}
-                            />
+                            <div className="stats-bar-fill" style={{ width: `${pct}%`, background: statsRedConfig.color }} />
                           </div>
                           <span className="stats-pct">{pct}%</span>
                           {data.noAsistio > 0 && (
@@ -361,37 +433,31 @@ const ConsolidacionPanel = () => {
 
                 {/* Llamadas */}
                 <div className="stats-section">
-                  <h3 className="stats-section-title" style={{ '--c1': statsRedConfig.color }}>
+                  <h3 className="stats-section-title" style={{ color: statsRedConfig.color, borderColor: statsRedConfig.color }}>
                     Llamadas
                   </h3>
                   <div className="stats-kpi-row">
-                    <div className="stats-kpi">
-                      <span className="stats-kpi-num">{currentStats.llamadasStats.total}</span>
-                      <span className="stats-kpi-label">Total llamadas</span>
-                    </div>
-                    <div className="stats-kpi">
-                      <span className="stats-kpi-num" style={{ color: '#059669' }}>{currentStats.llamadasStats.contesto}</span>
-                      <span className="stats-kpi-label">Contestaron</span>
-                    </div>
-                    <div className="stats-kpi">
-                      <span className="stats-kpi-num" style={{ color: '#D97706' }}>{currentStats.llamadasStats.no_contesto}</span>
-                      <span className="stats-kpi-label">No contestaron</span>
-                    </div>
-                    <div className="stats-kpi">
-                      <span className="stats-kpi-num" style={{ color: '#DC2626' }}>{currentStats.llamadasStats.desinteres}</span>
-                      <span className="stats-kpi-label">Desinterés</span>
-                    </div>
-                    <div className="stats-kpi">
-                      <span className="stats-kpi-num" style={{ color: '#526070' }}>{currentStats.sinContactar}</span>
-                      <span className="stats-kpi-label">Sin contactar</span>
-                    </div>
+                    {[
+                      { key: 'total',       label: 'Total',         color: undefined },
+                      { key: 'contesto',    label: 'Contestaron',   color: '#059669' },
+                      { key: 'no_contesto', label: 'No contestaron', color: '#D97706' },
+                      { key: 'desinteres',  label: 'Desinterés',    color: '#DC2626' },
+                      { key: 'sinContactar', label: 'Sin contactar', color: '#526070', fromRoot: true }
+                    ].map(({ key, label, color, fromRoot }) => (
+                      <div key={key} className="stats-kpi">
+                        <span className="stats-kpi-num" style={color ? { color } : {}}>
+                          {fromRoot ? currentStats.sinContactar : currentStats.llamadasStats[key]}
+                        </span>
+                        <span className="stats-kpi-label">{label}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
                 {/* Método de invitación */}
                 {Object.keys(currentStats.metodoCount).length > 0 && (
                   <div className="stats-section">
-                    <h3 className="stats-section-title" style={{ '--c1': statsRedConfig.color }}>
+                    <h3 className="stats-section-title" style={{ color: statsRedConfig.color, borderColor: statsRedConfig.color }}>
                       Método de invitación
                     </h3>
                     <div className="stats-metodo-list">
@@ -401,25 +467,18 @@ const ConsolidacionPanel = () => {
                           <div key={metodo} className="stats-metodo-row">
                             <span className="stats-metodo-nombre">{metodo}</span>
                             <div className="stats-metodo-bar-wrap">
-                              <div
-                                className="stats-metodo-bar"
-                                style={{
-                                  width: `${Math.round((count / currentStats.total) * 100)}%`,
-                                  background: statsRedConfig.color
-                                }}
-                              />
+                              <div className="stats-metodo-bar" style={{ width: `${Math.round((count / currentStats.total) * 100)}%`, background: statsRedConfig.color }} />
                             </div>
                             <span className="stats-metodo-count">{count}</span>
                           </div>
-                        ))
-                      }
+                        ))}
                     </div>
                   </div>
                 )}
 
-                {/* Inasistentes */}
+                {/* Inasistencias */}
                 <div className="stats-section">
-                  <h3 className="stats-section-title" style={{ '--c1': statsRedConfig.color }}>
+                  <h3 className="stats-section-title" style={{ color: statsRedConfig.color, borderColor: statsRedConfig.color }}>
                     Inasistencias
                   </h3>
                   <div className="stats-kpi-row">
