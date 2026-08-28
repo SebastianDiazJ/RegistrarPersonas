@@ -68,13 +68,22 @@ const PastoralProtectedRoute = () => {
   return <PastoralPanel />;
 };
 
+// /setup crea cuentas de Firebase Authentication con permisos elevados.
+// Solo admin o pastor pueden entrar una vez que ya existen esas cuentas.
+const SetupProtectedRoute = () => {
+  const { isAdminLoggedIn, isPastorLoggedIn, loading } = useAuth();
+  if (loading) return <div className="loading">Cargando...</div>;
+  if (!isAdminLoggedIn() && !isPastorLoggedIn()) return <Navigate to="/" replace />;
+  return <MigrationPage />;
+};
+
 function AppRoutes() {
   return (
     <>
       <ThemeToggle />
       <Routes>
         <Route path="/" element={<Lobby />} />
-        <Route path="/setup" element={<MigrationPage />} />
+        <Route path="/setup" element={<SetupProtectedRoute />} />
 
         <Route path="/xtreme/login" element={<LoginPage red="xtreme" />} />
         <Route path="/xtreme" element={<ProtectedRoute red="xtreme" />} />

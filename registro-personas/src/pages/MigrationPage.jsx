@@ -152,21 +152,38 @@ const MigrationPage = () => {
           <p className="migration-desc" style={{ marginTop: 0 }}>
             Copia estas reglas y pégalas en{' '}
             <strong>Firebase Console → Firestore → Rules</strong>.
-            Bloquean el acceso sin autenticación.
+            Cada red solo puede leer/escribir sus propias personas; admin y
+            pastor tienen acceso a todo. Sin sesión, acceso cero.
           </p>
           <pre className="rules-code">{`rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Datos de cada red (nombre, lider, whatsapp) — ya no guarda claves,
-    // el login vive en Firebase Authentication. Solo usuarios autenticados.
-    match /redes/{redId} {
-      allow read, write: if request.auth != null;
+    function esAdminOPastor() {
+      return request.auth != null && (
+        request.auth.token.email == 'admin@iglesia.com' ||
+        request.auth.token.email == 'pastor@iglesia.com'
+      );
     }
 
-    // Personas: solo usuarios autenticados
+    function esLiderDe(redId) {
+      return request.auth != null &&
+        request.auth.token.email == redId + '@redes.iglesia';
+    }
+
+    // Datos de cada red (nombre, lider, whatsapp) — ya no guarda claves,
+    // el login vive en Firebase Authentication.
+    // Lectura: cualquier usuario autenticado (la usa el formulario de registro).
+    // Escritura: solo admin y pastor, para que una red no edite el
+    // contacto de otra.
+    match /redes/{redId} {
+      allow read: if request.auth != null;
+      allow write: if esAdminOPastor();
+    }
+
+    // Personas: solo la propia red (por su email), admin o pastor.
     match /redes/{redId}/personas/{personId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if esLiderDe(redId) || esAdminOPastor();
     }
 
     // Config admin/pastor: ya no se usa (login vive en Firebase Auth), bloqueado
