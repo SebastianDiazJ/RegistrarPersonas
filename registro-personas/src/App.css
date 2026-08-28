@@ -2501,6 +2501,27 @@ html { scroll-behavior: smooth; }
 .patt-ok { background: #D1FAE5; color: #065F46; }
 .patt-no { background: #FEE2E2; color: #991B1B; }
 
+.plist-att-counter {
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+}
+.plist-att-num {
+  font-family: 'Josefin Sans', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--t1);
+  font-variant-numeric: tabular-nums;
+}
+.plist-att-label {
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--t2);
+  white-space: nowrap;
+}
+
 .plist-none { font-size: 0.8rem; color: var(--border); }
 
 .plist-call-stack { display: flex; flex-direction: column; gap: 0.1rem; }
@@ -2544,8 +2565,6 @@ html { scroll-behavior: smooth; }
 }
 .pact-edit   { color: var(--t2); }
 .pact-edit:hover { border-color: var(--t2); color: var(--t1); }
-.pact-call   { color: #0369A1; border-color: #BAE6FD; }
-.pact-call:hover { background: #E0F2FE; }
 .pact-save   { color: #065F46; border-color: #BBF7D0; background: #F0FDF4; }
 .pact-save:hover { background: #D1FAE5; }
 .pact-cancel { color: var(--t2); }

@@ -92,11 +92,6 @@ const PersonasTable = ({ personas, red, redConfig, busqueda, onRefresh, filtroSe
     }
   };
 
-  const handleMarkCalled = async (id) => {
-    const res = await updatePerson(red, id, { lastCallDate: new Date().toISOString(), callConfirmed: true });
-    if (res.success) onRefresh();
-  };
-
   if (personasFiltradas.length === 0) {
     return (
       <div className="plist-empty">
@@ -138,7 +133,13 @@ const PersonasTable = ({ personas, red, redConfig, busqueda, onRefresh, filtroSe
           const callStatus  = getCallAlertStatus(p);
           const isEditing   = editingId === p.id;
           const isExpanded  = expandedId === p.id;
-          const lastAtt     = [...(p.asistencias || [])].sort((a, b) => b.id - a.id).slice(0, 6);
+          const isAttFiltered = Boolean(filtroServicio || filtroFecha);
+          const asistCount = (p.asistencias || []).filter(a => {
+            if (!a.asistio) return false;
+            if (filtroServicio && a.servicio !== filtroServicio) return false;
+            if (filtroFecha && a.fecha !== filtroFecha) return false;
+            return true;
+          }).length;
           const lastCall    = [...(p.llamadas || [])].sort((a, b) => (b.ts || '').localeCompare(a.ts || ''))[0];
           const callCfg     = lastCall ? RESULT_CONFIG[lastCall.resultado] : null;
           const metodoShort = p.metodoInvitacion ? p.metodoInvitacion.substring(0, 12) : null;
@@ -199,23 +200,15 @@ const PersonasTable = ({ personas, red, redConfig, busqueda, onRefresh, filtroSe
                   )}
                 </div>
 
-                {/* Asistencia chips */}
+                {/* Asistencia: contador */}
                 <div className="plist-cell plist-cell-att hide-md">
-                  {lastAtt.length === 0 ? (
-                    <span className="plist-none">—</span>
-                  ) : (
-                    <div className="plist-att-chips">
-                      {lastAtt.map(a => (
-                        <span
-                          key={a.id}
-                          className={`patt-chip ${a.asistio ? 'patt-ok' : 'patt-no'}`}
-                          title={`${a.fecha} — ${a.servicio}`}
-                        >
-                          {a.asistio ? '✓' : '✗'}
-                        </span>
-                      ))}
-                    </div>
-                  )}
+                  <div
+                    className="plist-att-counter"
+                    title={isAttFiltered ? 'Asistencias que coinciden con el filtro' : 'Total de asistencias registradas'}
+                  >
+                    <span className="plist-att-num">{asistCount}</span>
+                    <span className="plist-att-label">{isAttFiltered ? 'en filtro' : 'asistencias'}</span>
+                  </div>
                 </div>
 
                 {/* Última llamada */}
@@ -249,7 +242,6 @@ const PersonasTable = ({ personas, red, redConfig, busqueda, onRefresh, filtroSe
                   ) : (
                     <>
                       <button className="pact-btn pact-edit" onClick={() => handleEdit(p)}>Editar</button>
-                      <button className="pact-btn pact-call" onClick={() => handleMarkCalled(p.id)} title="Marcar contactado">Llame</button>
                       <button className="pact-btn pact-del" onClick={() => handleDelete(p.id)}>×</button>
                     </>
                   )}
