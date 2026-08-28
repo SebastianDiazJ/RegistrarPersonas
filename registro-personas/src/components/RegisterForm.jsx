@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { addPerson, updatePerson } from '../services/personService';
+import { getRedInfo } from '../services/redService';
+import { buildWhatsAppLink, buildNewPersonMessage } from '../services/whatsappService';
 
 const MESES = [
   'Enero','Febrero','Marzo','Abril','Mayo','Junio',
@@ -33,8 +35,15 @@ const RegisterForm = ({ red, selectedPerson, onFinish }) => {
     fechaIngreso: todayISO(),
     prayerRequest: ''
   });
+  const [redInfo, setRedInfo] = useState(null);
+  const [lastAdded, setLastAdded] = useState(null);
 
   useEffect(() => {
+    getRedInfo(red).then(res => { if (res.success) setRedInfo(res.data); });
+  }, [red]);
+
+  useEffect(() => {
+    setLastAdded(null);
     if (selectedPerson) {
       let mes = '';
       let dia = '';
@@ -82,8 +91,10 @@ const RegisterForm = ({ red, selectedPerson, onFinish }) => {
 
     if (selectedPerson) {
       await updatePerson(red, selectedPerson.id, personData);
+      setLastAdded(null);
     } else {
       await addPerson(red, personData);
+      setLastAdded({ nombre: form.nombre, apellido: form.apellido, telefono: form.telefono });
     }
     onFinish();
     setForm({
@@ -99,6 +110,24 @@ const RegisterForm = ({ red, selectedPerson, onFinish }) => {
   return (
     <div className="register-form">
       <h2>{selectedPerson ? 'Editar persona' : 'Registrar persona'}</h2>
+
+      {lastAdded && !selectedPerson && (
+        <div className="consol-feedback-ok whatsapp-banner">
+          <span>{lastAdded.nombre} {lastAdded.apellido} fue registrado/a correctamente.</span>
+          {redInfo?.whatsapp ? (
+            <a
+              className="btn-whatsapp"
+              href={buildWhatsAppLink(redInfo.whatsapp, buildNewPersonMessage(redInfo.nombre || red, lastAdded))}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Avisar por WhatsApp{redInfo.liderNombre ? ` a ${redInfo.liderNombre}` : ''}
+            </a>
+          ) : (
+            <span className="whatsapp-hint">Configura el WhatsApp del líder en el Módulo Pastoral</span>
+          )}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit}>
         <div className="form-group">

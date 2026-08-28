@@ -7,6 +7,8 @@ import NetworkApp from './pages/NetworkApp';
 import MigrationPage from './pages/MigrationPage';
 import ConsolidacionLogin from './pages/ConsolidacionLogin';
 import ConsolidacionPanel from './pages/ConsolidacionPanel';
+import PastoralLogin from './pages/PastoralLogin';
+import PastoralPanel from './pages/PastoralPanel';
 import './App.css';
 
 /* ── Theme Toggle ─────────────────────────────────────── */
@@ -58,6 +60,13 @@ const AdminProtectedRoute = () => {
   return <ConsolidacionPanel />;
 };
 
+const PastoralProtectedRoute = () => {
+  const { isPastorLoggedIn, loading } = useAuth();
+  if (loading) return <div className="loading">Cargando...</div>;
+  if (!isPastorLoggedIn()) return <Navigate to="/pastoral/login" replace />;
+  return <PastoralPanel />;
+};
+
 function AppRoutes() {
   return (
     <>
@@ -80,6 +89,9 @@ function AppRoutes() {
 
         <Route path="/consolidacion/login" element={<ConsolidacionLogin />} />
         <Route path="/consolidacion" element={<AdminProtectedRoute />} />
+
+        <Route path="/pastoral/login" element={<PastoralLogin />} />
+        <Route path="/pastoral" element={<PastoralProtectedRoute />} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

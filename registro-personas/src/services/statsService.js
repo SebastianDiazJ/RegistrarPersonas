@@ -71,3 +71,16 @@ export const computeRedStats = (personas, { desde, hasta } = {}) => {
     rangoHasta: cutoffTo.toISOString().split('T')[0]
   };
 };
+
+// Agrupa las personas de una red por el campo "aCargoDe" (responsable interno)
+export const computeLeaderBreakdown = (personas) => {
+  const groups = {};
+  personas.forEach(p => {
+    const key = (p.aCargoDe || '').trim() || 'Sin asignar';
+    if (!groups[key]) groups[key] = { nombre: key, total: 0, contactados: 0, pendientes: 0 };
+    groups[key].total++;
+    if (p.lastCallDate) groups[key].contactados++;
+    else groups[key].pendientes++;
+  });
+  return Object.values(groups).sort((a, b) => b.total - a.total);
+};

@@ -1,80 +1,95 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../config/firebase';
+import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
+import { auth } from '../config/firebase';
+
+const RED_EMAIL   = (red) => `${red}@redes.iglesia`;
+const ADMIN_EMAIL  = 'admin@iglesia.com';
+const PASTOR_EMAIL = 'pastor@iglesia.com';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [sessions, setSessions] = useState({});
+  const [user, setUser]       = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('church_sessions');
-      if (saved) setSessions(JSON.parse(saved));
-    } catch {
-      setSessions({});
-    }
-    setLoading(false);
+    const unsub = onAuthStateChanged(auth, (u) => {
+      setUser(u);
+      setLoading(false);
+    });
+    return unsub;
   }, []);
 
-  const isLoggedIn = (red) => sessions[red] === true;
+  const isLoggedIn = (red) => user?.email === RED_EMAIL(red);
 
-  const login = async (red, usuario, password) => {
+  const login = async (red, _usuario, password) => {
     try {
-      const docRef = doc(db, 'redes', red);
-      const docSnap = await getDoc(docRef);
-      if (!docSnap.exists()) return { success: false, error: 'Red no encontrada' };
-
-      const data = docSnap.data();
-      if (data.usuario === usuario && data.password === password) {
-        const newSessions = { ...sessions, [red]: true };
-        setSessions(newSessions);
-        localStorage.setItem('church_sessions', JSON.stringify(newSessions));
-        return { success: true };
-      }
-      return { success: false, error: 'Usuario o contraseña incorrectos' };
+      await signInWithEmailAndPassword(auth, RED_EMAIL(red), password);
+      return { success: true };
     } catch (error) {
-      return { success: false, error: 'Error de conexión. Intenta de nuevo.' };
+      const msg =
+        error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password'
+          ? 'Contraseña incorrecta'
+          : error.code === 'auth/user-not-found'
+          ? 'Usuario no encontrado. Ve a /setup para configurar.'
+          : 'Error de conexión. Intenta de nuevo.';
+      return { success: false, error: msg };
     }
   };
 
-  const logout = (red) => {
-    const newSessions = { ...sessions, [red]: false };
-    setSessions(newSessions);
-    localStorage.setItem('church_sessions', JSON.stringify(newSessions));
+  const logout = async () => {
+    await signOut(auth);
   };
 
   const loginAdmin = async (email, password) => {
     try {
-      const docRef = doc(db, 'config', 'admin');
-      const docSnap = await getDoc(docRef);
-      if (!docSnap.exists()) {
-        return { success: false, error: 'Admin no configurado. Ve a /setup para inicializar.' };
+      await signInWithEmailAndPassword(auth, email, password);
+      if (auth.currentUser?.email !== ADMIN_EMAIL) {
+        await signOut(auth);
+        return { success: false, error: 'Acceso denegado. Solo el admin puede ingresar aquí.' };
       }
-      const data = docSnap.data();
-      if (data.email === email && data.password === password) {
-        const newSessions = { ...sessions, admin: true };
-        setSessions(newSessions);
-        localStorage.setItem('church_sessions', JSON.stringify(newSessions));
-        return { success: true };
-      }
-      return { success: false, error: 'Correo o contraseña incorrectos' };
-    } catch {
-      return { success: false, error: 'Error de conexión. Intenta de nuevo.' };
+      return { success: true };
+    } catch (error) {
+      const msg =
+        error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password'
+          ? 'Correo o contraseña incorrectos'
+          : 'Error de conexión. Intenta de nuevo.';
+      return { success: false, error: msg };
     }
   };
 
-  const isAdminLoggedIn = () => sessions['admin'] === true;
+  const isAdminLoggedIn = () => user?.email === ADMIN_EMAIL;
 
-  const logoutAdmin = () => {
-    const newSessions = { ...sessions, admin: false };
-    setSessions(newSessions);
-    localStorage.setItem('church_sessions', JSON.stringify(newSessions));
+  const logoutAdmin = async () => {
+    await signOut(auth);
+  };
+
+  const loginPastor = async (email, password) => {
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      if (auth.currentUser?.email !== PASTOR_EMAIL) {
+        await signOut(auth);
+        return { success: false, error: 'Acceso denegado.' };
+      }
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: 'Correo o contraseña incorrectos' };
+    }
+  };
+
+  const isPastorLoggedIn = () => user?.email === PASTOR_EMAIL;
+
+  const logoutPastor = async () => {
+    await signOut(auth);
   };
 
   return (
-    <AuthContext.Provider value={{ sessions, isLoggedIn, login, logout, loading, loginAdmin, isAdminLoggedIn, logoutAdmin }}>
+    <AuthContext.Provider value={{
+      user, loading,
+      isLoggedIn, login, logout,
+      loginAdmin, isAdminLoggedIn, logoutAdmin,
+      loginPastor, isPastorLoggedIn, logoutPastor
+    }}>
       {children}
     </AuthContext.Provider>
   );

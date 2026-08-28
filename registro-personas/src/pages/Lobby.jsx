@@ -62,6 +62,9 @@ const Lobby = () => {
         <button className="lobby-admin-link" onClick={() => navigate('/consolidacion/login')}>
           Consolidacion
         </button>
+        <button className="lobby-admin-link" onClick={() => navigate('/pastoral/login')}>
+          Pastoral
+        </button>
       </div>
     </div>
   );

@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getCountByRed, addPerson, getAllPersons } from '../services/personService';
 import { computeRedStats } from '../services/statsService';
+import { getAllRedesInfo } from '../services/redService';
+import { buildWhatsAppLink, buildNewPersonMessage } from '../services/whatsappService';
 import PersonasTable from '../components/PersonasTable';
 
 const REDES = [
@@ -39,6 +41,8 @@ const ConsolidacionPanel = () => {
   const [form, setForm]               = useState(EMPTY_FORM);
   const [submitting, setSubmitting]   = useState(false);
   const [feedback, setFeedback]       = useState(null);
+  const [redesInfo, setRedesInfo]     = useState({});
+  const [lastRegistered, setLastRegistered] = useState(null);
 
   // Ver personas
   const [redConsulta, setRedConsulta]         = useState('xtreme');
@@ -57,6 +61,7 @@ const ConsolidacionPanel = () => {
   const [rawPersonasStats, setRawPersonasStats] = useState({});
 
   useEffect(() => { loadCounts(); }, []);
+  useEffect(() => { getAllRedesInfo(REDES.map(r => r.id)).then(setRedesInfo); }, []);
   useEffect(() => { if (activeTab === 'consultar') loadPersonas(redConsulta); }, [activeTab, redConsulta]);
   useEffect(() => { if (activeTab === 'estadisticas') loadAllStats(); }, [activeTab]);
 
@@ -117,15 +122,17 @@ const ConsolidacionPanel = () => {
     });
     if (result.success) {
       setFeedback({ type: 'success', msg: `${form.nombre} registrado/a en ${REDES.find(r => r.id === selectedRed).nombre}` });
+      setLastRegistered({ red: selectedRed, nombre: form.nombre, apellido: form.apellido, telefono: form.telefono });
       setForm(EMPTY_FORM);
       loadCounts();
     } else {
       setFeedback({ type: 'error', msg: result.error });
+      setLastRegistered(null);
     }
     setSubmitting(false);
   };
 
-  const handleLogout = () => { logoutAdmin(); navigate('/'); };
+  const handleLogout = async () => { await logoutAdmin(); navigate('/'); };
   const handleStatsRedChange = (redId) => {
     setStatsRed(redId);
     if (rawPersonasStats[redId]) {
@@ -208,7 +215,7 @@ const ConsolidacionPanel = () => {
                   type="button"
                   className={`consol-red-tab ${selectedRed === red.id ? 'active' : ''}`}
                   style={{ '--c1': red.color }}
-                  onClick={() => { setSelectedRed(red.id); setFeedback(null); }}
+                  onClick={() => { setSelectedRed(red.id); setFeedback(null); setLastRegistered(null); }}
                 >
                   {red.nombre}
                 </button>
@@ -253,8 +260,25 @@ const ConsolidacionPanel = () => {
                 </div>
               </div>
               {feedback && (
-                <div className={feedback.type === 'success' ? 'consol-feedback-ok' : 'login-error'}>
-                  {feedback.msg}
+                <div className={feedback.type === 'success' ? 'consol-feedback-ok whatsapp-banner' : 'login-error'}>
+                  <span>{feedback.msg}</span>
+                  {feedback.type === 'success' && lastRegistered && (
+                    redesInfo[lastRegistered.red]?.whatsapp ? (
+                      <a
+                        className="btn-whatsapp"
+                        href={buildWhatsAppLink(
+                          redesInfo[lastRegistered.red].whatsapp,
+                          buildNewPersonMessage(redesInfo[lastRegistered.red].nombre || REDES.find(r => r.id === lastRegistered.red).nombre, lastRegistered)
+                        )}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Avisar por WhatsApp{redesInfo[lastRegistered.red]?.liderNombre ? ` a ${redesInfo[lastRegistered.red].liderNombre}` : ''}
+                      </a>
+                    ) : (
+                      <span className="whatsapp-hint">Configura el WhatsApp del líder en el Módulo Pastoral</span>
+                    )
+                  )}
                 </div>
               )}
               <button className="btn-submit" style={{ background: redConfig.color }} disabled={submitting}>

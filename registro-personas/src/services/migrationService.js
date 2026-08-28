@@ -1,38 +1,48 @@
 import { collection, getDocs, addDoc, setDoc, getDoc, doc } from 'firebase/firestore';
-import { db } from '../config/firebase';
+import { createUserWithEmailAndPassword, signOut } from 'firebase/auth';
+import { db, auth } from '../config/firebase';
 
-const REDES_CONFIG = [
-  {
-    id: 'xtreme',
-    nombre: 'XTREME',
-    usuario: 'xtreme',
-    password: 'Xtr3m3@2026',
-    color1: '#667eea',
-    color2: '#764ba2'
-  },
-  {
-    id: 'parejas',
-    nombre: 'PAREJAS',
-    usuario: 'parejas',
-    password: 'Par3jas@2026',
-    color1: '#f093fb',
-    color2: '#f5576c'
-  },
-  {
-    id: '360',
-    nombre: '360',
-    usuario: 'red360',
-    password: '360Vida@2026',
-    color1: '#4facfe',
-    color2: '#00f2fe'
+const RED_EMAIL = (red) => `${red}@redes.iglesia`;
+
+// Crea cuentas en Firebase Authentication para cada red
+export const setupAuthUsers = async (passwords) => {
+  // passwords: { xtreme, parejas, '360', senior, admin, pastor }
+  const results = {};
+
+  const accounts = [
+    { key: 'xtreme',  email: RED_EMAIL('xtreme') },
+    { key: 'parejas', email: RED_EMAIL('parejas') },
+    { key: '360',     email: RED_EMAIL('360') },
+    { key: 'senior',  email: RED_EMAIL('senior') },
+    { key: 'admin',   email: 'admin@iglesia.com' },
+    { key: 'pastor',  email: 'pastor@iglesia.com' },
+  ];
+
+  for (const { key, email } of accounts) {
+    const password = passwords[key];
+    if (!password) { results[key] = { skipped: true }; continue; }
+
+    try {
+      await createUserWithEmailAndPassword(auth, email, password);
+      await signOut(auth);
+      results[key] = { success: true };
+    } catch (error) {
+      if (error.code === 'auth/email-already-in-use') {
+        results[key] = { success: true, existing: true };
+      } else {
+        results[key] = { success: false, error: error.message };
+      }
+    }
   }
-];
+
+  return results;
+};
 
 export const initializeRedes = async () => {
   try {
-    for (const red of REDES_CONFIG) {
-      const { id, ...data } = red;
-      await setDoc(doc(db, 'redes', id), data, { merge: true });
+    const redes = ['xtreme', 'parejas', '360', 'senior'];
+    for (const id of redes) {
+      await setDoc(doc(db, 'redes', id), { nombre: id.toUpperCase() }, { merge: true });
     }
     return { success: true };
   } catch (error) {
@@ -57,20 +67,6 @@ export const migrateXtremeData = async () => {
   }
 };
 
-export const initializeAdmin = async () => {
-  try {
-    const ref = doc(db, 'config', 'admin');
-    const existing = await getDoc(ref);
-    if (existing.exists()) {
-      return { success: true, skipped: true };
-    }
-    await setDoc(ref, { email: 'admin@iglesia.com', password: 'Admin@2026' });
-    return { success: true, skipped: false };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-};
-
 export const checkMigrationNeeded = async () => {
   try {
     const oldSnapshot = await getDocs(collection(db, 'persons'));
@@ -82,5 +78,29 @@ export const checkMigrationNeeded = async () => {
     };
   } catch {
     return { oldCount: 0, newCount: 0, needed: false };
+  }
+};
+
+export const initializeAdmin = async () => {
+  try {
+    const ref = doc(db, 'config', 'admin');
+    const existing = await getDoc(ref);
+    if (existing.exists()) return { success: true, skipped: true };
+    await setDoc(ref, { email: 'admin@iglesia.com' });
+    return { success: true, skipped: false };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+};
+
+export const initializePastor = async () => {
+  try {
+    const ref = doc(db, 'config', 'pastor');
+    const existing = await getDoc(ref);
+    if (existing.exists()) return { success: true, skipped: true };
+    await setDoc(ref, { email: 'pastor@iglesia.com' });
+    return { success: true, skipped: false };
+  } catch (error) {
+    return { success: false, error: error.message };
   }
 };

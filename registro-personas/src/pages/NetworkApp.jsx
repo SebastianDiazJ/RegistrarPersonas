@@ -29,8 +29,8 @@ const NetworkApp = ({ red }) => {
     setRefresh(prev => !prev);
   };
 
-  const handleSalir = () => {
-    logout(red);
+  const handleSalir = async () => {
+    await logout(red);
     navigate('/');
   };
 
