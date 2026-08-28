@@ -36,6 +36,7 @@ const PastoralPanel = () => {
   const [leaderDrafts, setLeaderDrafts] = useState({});
   const [savingRed, setSavingRed] = useState(null);
   const [savedFeedback, setSavedFeedback] = useState(null);
+  const [expandedBreakdown, setExpandedBreakdown] = useState(null); // `${redId}::${nombre}`
 
   const loadAll = async () => {
     setLoading(true);
@@ -102,6 +103,18 @@ const PastoralPanel = () => {
 
   const handleDraftChange = (redId, field) => (e) => {
     setLeaderDrafts(d => ({ ...d, [redId]: { ...d[redId], [field]: e.target.value } }));
+  };
+
+  const toggleBreakdown = (redId, nombre) => {
+    const key = `${redId}::${nombre}`;
+    setExpandedBreakdown(prev => (prev === key ? null : key));
+  };
+
+  const getBreakdownPersonas = (redId, nombre) => {
+    return (rawPersonas[redId] || []).filter(p => {
+      const key = (p.aCargoDe || '').trim() || 'Sin asignar';
+      return key === nombre;
+    });
   };
 
   const handleSaveLeader = async (redId) => {
@@ -337,16 +350,42 @@ const PastoralPanel = () => {
                         <div className="pastoral-breakdown">
                           <span className="pastoral-breakdown-title">Responsables internos (a cargo de)</span>
                           <div className="pastoral-breakdown-list">
-                            {breakdown.map(b => (
-                              <div key={b.nombre} className="pastoral-breakdown-row">
-                                <span className="pastoral-breakdown-nombre">{b.nombre}</span>
-                                <span className="pastoral-breakdown-total">{b.total} personas</span>
-                                <span className="pastoral-breakdown-ok">{b.contactados} contactadas</span>
-                                {b.pendientes > 0 && (
-                                  <span className="pastoral-breakdown-pend">{b.pendientes} pendientes</span>
-                                )}
-                              </div>
-                            ))}
+                            {breakdown.map(b => {
+                              const key = `${red.id}::${b.nombre}`;
+                              const isOpen = expandedBreakdown === key;
+                              const personasGrupo = isOpen ? getBreakdownPersonas(red.id, b.nombre) : [];
+                              return (
+                                <div key={b.nombre}>
+                                  <button
+                                    type="button"
+                                    className={`pastoral-breakdown-row pastoral-breakdown-row-btn ${isOpen ? 'open' : ''}`}
+                                    onClick={() => toggleBreakdown(red.id, b.nombre)}
+                                  >
+                                    <span className="pastoral-breakdown-nombre">{b.nombre}</span>
+                                    <span className="pastoral-breakdown-total">{b.total} personas</span>
+                                    <span className="pastoral-breakdown-ok">{b.contactados} contactadas</span>
+                                    {b.pendientes > 0 && (
+                                      <span className="pastoral-breakdown-pend">{b.pendientes} pendientes</span>
+                                    )}
+                                  </button>
+                                  {isOpen && (
+                                    <div className="pastoral-breakdown-personas">
+                                      {personasGrupo.map(p => (
+                                        <div key={p.id} className="pastoral-breakdown-persona">
+                                          <span className="pastoral-breakdown-persona-nombre">{p.nombre} {p.apellido}</span>
+                                          {p.telefono && (
+                                            <a className="pastoral-breakdown-persona-tel" href={`tel:${p.telefono}`}>{p.telefono}</a>
+                                          )}
+                                          <span className={`pastoral-breakdown-persona-status ${p.lastCallDate ? 'ok' : 'pend'}`}>
+                                            {p.lastCallDate ? 'Contactada' : 'Pendiente'}
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       )}

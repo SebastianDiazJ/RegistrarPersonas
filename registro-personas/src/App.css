@@ -3048,6 +3048,20 @@ html { scroll-behavior: smooth; }
   font-size: 0.72rem;
 }
 
+.pastoral-breakdown-row-btn {
+  width: 100%;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-family: 'Josefin Sans', sans-serif;
+  transition: var(--trans);
+  text-align: left;
+}
+.pastoral-breakdown-row-btn:hover { border-color: var(--c1); }
+.pastoral-breakdown-row-btn.open {
+  border-color: var(--c1);
+  background: color-mix(in srgb, var(--c1) 8%, var(--ground));
+}
+
 .pastoral-breakdown-nombre {
   font-weight: 700;
   color: var(--t1);
@@ -3058,6 +3072,53 @@ html { scroll-behavior: smooth; }
 .pastoral-breakdown-total { color: var(--t2); }
 .pastoral-breakdown-ok { color: var(--success); font-weight: 600; }
 .pastoral-breakdown-pend { color: var(--danger); font-weight: 600; }
+
+.pastoral-breakdown-personas {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.4rem 0.6rem 0.5rem 1rem;
+  border-left: 2px solid var(--c1);
+  margin: 0.15rem 0 0.3rem;
+}
+
+.pastoral-breakdown-persona {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.72rem;
+}
+
+.pastoral-breakdown-persona-nombre {
+  font-weight: 600;
+  color: var(--t1);
+  flex: 1;
+  min-width: 100px;
+}
+
+.pastoral-breakdown-persona-tel {
+  color: var(--c1);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.pastoral-breakdown-persona-status {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  padding: 0.15rem 0.5rem;
+  border-radius: 10px;
+}
+.pastoral-breakdown-persona-status.ok {
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 15%, transparent);
+}
+.pastoral-breakdown-persona-status.pend {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 15%, transparent);
+}
 
 .pastoral-compare-servicios {
   display: flex;

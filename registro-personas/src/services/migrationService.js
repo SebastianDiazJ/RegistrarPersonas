@@ -1,4 +1,4 @@
-import { collection, getDocs, addDoc, setDoc, getDoc, doc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, setDoc, doc } from 'firebase/firestore';
 import { createUserWithEmailAndPassword, signOut } from 'firebase/auth';
 import { db, auth } from '../config/firebase';
 
@@ -78,29 +78,5 @@ export const checkMigrationNeeded = async () => {
     };
   } catch {
     return { oldCount: 0, newCount: 0, needed: false };
-  }
-};
-
-export const initializeAdmin = async () => {
-  try {
-    const ref = doc(db, 'config', 'admin');
-    const existing = await getDoc(ref);
-    if (existing.exists()) return { success: true, skipped: true };
-    await setDoc(ref, { email: 'admin@iglesia.com' });
-    return { success: true, skipped: false };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-};
-
-export const initializePastor = async () => {
-  try {
-    const ref = doc(db, 'config', 'pastor');
-    const existing = await getDoc(ref);
-    if (existing.exists()) return { success: true, skipped: true };
-    await setDoc(ref, { email: 'pastor@iglesia.com' });
-    return { success: true, skipped: false };
-  } catch (error) {
-    return { success: false, error: error.message };
   }
 };

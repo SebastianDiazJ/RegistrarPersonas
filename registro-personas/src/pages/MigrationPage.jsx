@@ -158,9 +158,10 @@ const MigrationPage = () => {
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Bloquear acceso a documentos de credenciales
+    // Datos de cada red (nombre, lider, whatsapp) — ya no guarda claves,
+    // el login vive en Firebase Authentication. Solo usuarios autenticados.
     match /redes/{redId} {
-      allow read, write: if false;
+      allow read, write: if request.auth != null;
     }
 
     // Personas: solo usuarios autenticados
@@ -168,7 +169,7 @@ service cloud.firestore {
       allow read, write: if request.auth != null;
     }
 
-    // Config admin/pastor: bloqueado desde el cliente
+    // Config admin/pastor: ya no se usa (login vive en Firebase Auth), bloqueado
     match /config/{doc} {
       allow read, write: if false;
     }
