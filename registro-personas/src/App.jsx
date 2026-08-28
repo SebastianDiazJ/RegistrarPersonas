@@ -47,9 +47,10 @@ const ThemeInit = () => {
 
 /* ── Protected routes ─────────────────────────────────── */
 const ProtectedRoute = ({ red }) => {
-  const { isLoggedIn, loading } = useAuth();
+  const { isLoggedIn, isAdminLoggedIn, isPastorLoggedIn, loading } = useAuth();
   if (loading) return <div className="loading">Cargando...</div>;
-  if (!isLoggedIn(red)) return <Navigate to={`/${red}/login`} replace />;
+  const allowed = isLoggedIn(red) || isAdminLoggedIn() || isPastorLoggedIn();
+  if (!allowed) return <Navigate to={`/${red}/login`} replace />;
   return <NetworkApp red={red} />;
 };
 

@@ -10,10 +10,10 @@ const REDES_CONFIG = {
 };
 
 const LoginPage = ({ red }) => {
-  const [usuario, setUsuario] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [error, setError]       = useState('');
+  const [loading, setLoading]   = useState(false);
+  const [showPwd, setShowPwd]   = useState(false);
   const { login, isLoggedIn } = useAuth();
   const navigate = useNavigate();
 
@@ -23,7 +23,7 @@ const LoginPage = ({ red }) => {
     e.preventDefault();
     setLoading(true);
     setError('');
-    const result = await login(red, usuario, password);
+    const result = await login(red, red, password);
     if (result.success) {
       navigate(`/${red}`);
     } else {
@@ -50,25 +50,31 @@ const LoginPage = ({ red }) => {
 
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">
-            <label>Usuario</label>
-            <input
-              value={usuario}
-              onChange={e => setUsuario(e.target.value)}
-              placeholder="Nombre de usuario"
-              autoComplete="username"
-              required
-            />
-          </div>
-          <div className="form-group">
             <label>Contrasena</label>
-            <input
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              placeholder="Contrasena"
-              autoComplete="current-password"
-              required
-            />
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <input
+                type={showPwd ? 'text' : 'password'}
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="Contrasena de acceso"
+                autoComplete="current-password"
+                required
+                style={{ flex: 1, paddingRight: '4rem' }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPwd(v => !v)}
+                style={{
+                  position: 'absolute', right: '0.6rem',
+                  background: 'none', border: 'none',
+                  color: 'var(--t2)', fontSize: '0.72rem',
+                  fontWeight: 700, cursor: 'pointer',
+                  fontFamily: 'inherit', letterSpacing: '0.3px'
+                }}
+              >
+                {showPwd ? 'Ocultar' : 'Ver'}
+              </button>
+            </div>
           </div>
 
           {error && <div className="login-error">{error}</div>}
