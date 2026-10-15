@@ -103,12 +103,15 @@ export const addAttendanceRecord = async (red, personId, { servicio, asistio }) 
 };
 
 // resultado: 'contesto' | 'no_contesto' | 'desinteres'
-export const addCallRecord = async (red, personId, { resultado }) => {
-  const record = {
-    fecha: new Date().toISOString().split('T')[0],
-    resultado,
-    ts: new Date().toISOString()
-  };
+export const buildCallRecord = ({ resultado, observacion }) => ({
+  fecha: new Date().toISOString().split('T')[0],
+  resultado,
+  observacion: (observacion || '').trim(),
+  ts: new Date().toISOString()
+});
+
+export const addCallRecord = async (red, personId, { resultado, observacion }) => {
+  const record = buildCallRecord({ resultado, observacion });
   try {
     await updateDoc(doc(db, 'redes', red, 'personas', personId), {
       llamadas: arrayUnion(record),

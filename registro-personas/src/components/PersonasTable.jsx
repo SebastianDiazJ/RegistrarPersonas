@@ -1,9 +1,11 @@
 import { useState, useMemo } from 'react';
 import { deletePerson, updatePerson } from '../services/personService';
 import { getCallAlertStatus } from '../services/callAlertService';
+import { normalizeMetodo } from '../config/opciones';
+import { onlyLetters, onlyDigits } from '../utils/validacion';
 
 const initials = (p) =>
-  ((p.nombre || '')[0] + (p.apellido || '')[0]).toUpperCase();
+  (((p.nombre || '')[0] || '') + ((p.apellido || '')[0] || '')).toUpperCase() || '?';
 
 const fmtDate = (iso) => {
   if (!iso) return '—';
@@ -30,7 +32,7 @@ const PersonasTable = ({ personas, red, redConfig, busqueda, onRefresh, filtroSe
     if (busqueda) {
       const q = busqueda.toLowerCase();
       list = list.filter(p =>
-        `${p.nombre} ${p.apellido}`.toLowerCase().includes(q) ||
+        `${p.nombre || ''} ${p.apellido || ''}`.toLowerCase().includes(q) ||
         (p.telefono || '').includes(q) ||
         (p.email || '').toLowerCase().includes(q)
       );
@@ -55,7 +57,7 @@ const PersonasTable = ({ personas, red, redConfig, busqueda, onRefresh, filtroSe
     return [...list].sort((a, b) => {
       let av, bv;
       switch (sortBy) {
-        case 'nombre':       av = `${a.nombre} ${a.apellido}`.toLowerCase(); bv = `${b.nombre} ${b.apellido}`.toLowerCase(); break;
+        case 'nombre':       av = `${a.nombre || ''} ${a.apellido || ''}`.toLowerCase(); bv = `${b.nombre || ''} ${b.apellido || ''}`.toLowerCase(); break;
         case 'ultimallamada': av = new Date(a.lastCallDate || 0); bv = new Date(b.lastCallDate || 0); break;
         case 'ingreso':      av = new Date(a.fechaIngreso || 0); bv = new Date(b.fechaIngreso || 0); break;
         case 'asistencias':  av = (a.asistencias || []).length; bv = (b.asistencias || []).length; break;
@@ -142,7 +144,7 @@ const PersonasTable = ({ personas, red, redConfig, busqueda, onRefresh, filtroSe
           }).length;
           const lastCall    = [...(p.llamadas || [])].sort((a, b) => (b.ts || '').localeCompare(a.ts || ''))[0];
           const callCfg     = lastCall ? RESULT_CONFIG[lastCall.resultado] : null;
-          const metodoShort = p.metodoInvitacion ? p.metodoInvitacion.substring(0, 12) : null;
+          const metodoShort = p.metodoInvitacion ? normalizeMetodo(p.metodoInvitacion).substring(0, 12) : null;
 
           return (
             <div key={p.id} className={`plist-item ${callStatus.isAlert ? 'plist-alert' : ''}`}>
@@ -163,15 +165,15 @@ const PersonasTable = ({ personas, red, redConfig, busqueda, onRefresh, filtroSe
                     <div className="edit-name-wrap">
                       <input
                         className="edit-input"
-                        value={editForm.nombre}
-                        onChange={e => setEditForm(f => ({ ...f, nombre: e.target.value }))}
+                        value={editForm.nombre || ''}
+                        onChange={e => setEditForm(f => ({ ...f, nombre: onlyLetters(e.target.value) }))}
                         placeholder="Nombre"
                         onClick={e => e.stopPropagation()}
                       />
                       <input
                         className="edit-input"
-                        value={editForm.apellido}
-                        onChange={e => setEditForm(f => ({ ...f, apellido: e.target.value }))}
+                        value={editForm.apellido || ''}
+                        onChange={e => setEditForm(f => ({ ...f, apellido: onlyLetters(e.target.value) }))}
                         placeholder="Apellido"
                         onClick={e => e.stopPropagation()}
                       />
@@ -189,7 +191,7 @@ const PersonasTable = ({ personas, red, redConfig, busqueda, onRefresh, filtroSe
                 <div className="plist-cell plist-cell-contact hide-sm" onClick={e => e.stopPropagation()}>
                   {isEditing ? (
                     <>
-                      <input className="edit-input" value={editForm.telefono || ''} onChange={e => setEditForm(f => ({ ...f, telefono: e.target.value }))} placeholder="Teléfono" type="tel" />
+                      <input className="edit-input" value={editForm.telefono || ''} onChange={e => setEditForm(f => ({ ...f, telefono: onlyDigits(e.target.value) }))} placeholder="Teléfono" type="tel" inputMode="numeric" />
                       <input className="edit-input" value={editForm.email || ''} onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))} placeholder="Email" type="email" />
                     </>
                   ) : (
@@ -279,7 +281,7 @@ const PersonasTable = ({ personas, red, redConfig, busqueda, onRefresh, filtroSe
                     {p.metodoInvitacion && (
                       <div className="pdetail-row">
                         <span className="pdetail-label">Llegó por</span>
-                        <span>{p.metodoInvitacion}</span>
+                        <span>{normalizeMetodo(p.metodoInvitacion)}</span>
                       </div>
                     )}
                     {p.aCargoDe && (
@@ -319,9 +321,10 @@ const PersonasTable = ({ personas, red, redConfig, busqueda, onRefresh, filtroSe
                         {[...(p.llamadas || [])].sort((a, b) => (b.ts || '').localeCompare(a.ts || '')).slice(0, 8).map((l, i) => {
                           const cfg = RESULT_CONFIG[l.resultado] || { label: l.resultado, cls: '' };
                           return (
-                            <span key={i} className={`patt-chip-lg ${cfg.cls}`}>
+                            <span key={i} className={`patt-chip-lg ${cfg.cls}`} title={l.observacion || ''}>
                               <span className="patt-mark">{cfg.label}</span>
                               <span className="patt-date">{l.fecha}</span>
+                              {l.observacion && <span className="patt-obs">{l.observacion}</span>}
                             </span>
                           );
                         })}

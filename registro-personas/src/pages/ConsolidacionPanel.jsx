@@ -1,11 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { getCountByRed, addPerson, getAllPersons } from '../services/personService';
+import { getCountByRed, addPerson, getAllPersons, buildCallRecord } from '../services/personService';
 import { computeRedStats } from '../services/statsService';
 import { getAllRedesInfo } from '../services/redService';
 import { buildWhatsAppLink, buildNewPersonMessage } from '../services/whatsappService';
 import PersonasTable from '../components/PersonasTable';
+import { METODOS_INVITACION, RESULTADOS_LLAMADA, MESES, diasPorMes } from '../config/opciones';
+import { onlyLetters, onlyDigits } from '../utils/validacion';
 
 const REDES = [
   { id: 'xtreme',  nombre: 'XTREME',  color: '#4338CA' },
@@ -14,7 +16,6 @@ const REDES = [
   { id: 'senior',  nombre: 'SENIOR',  color: '#B45309' }
 ];
 
-const METODOS_INVITACION = ['Publicidad', 'Volante', 'Familiar', 'Amigo', 'Redes sociales', 'Otro'];
 const SERVICIOS_LABEL    = { sabado: 'Sábado', domingo: 'Domingo', miercoles: 'Miércoles' };
 
 const todayISO = () => new Date().toISOString().split('T')[0];
@@ -23,7 +24,8 @@ const thirtyDaysAgoISO = () => new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).t
 const EMPTY_FORM = {
   nombre: '', apellido: '', telefono: '', aCargoDe: '',
   email: '', prayerRequest: '', metodoInvitacion: '',
-  fechaIngreso: todayISO()
+  fechaIngreso: todayISO(),
+  mesCumple: '', diaCumple: '', contesto: '', observacion: ''
 };
 
 const ConsolidacionPanel = () => {
@@ -106,19 +108,30 @@ const ConsolidacionPanel = () => {
   };
 
   const handleChange = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }));
+  const handleFiltered = (field, filter) => (e) => setForm(f => ({ ...f, [field]: filter(e.target.value) }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
     setFeedback(null);
+    const llamada = form.contesto
+      ? buildCallRecord({ resultado: form.contesto, observacion: form.observacion })
+      : null;
     const result = await addPerson(selectedRed, {
       nombre: form.nombre.trim(), apellido: form.apellido.trim(),
       telefono: form.telefono.trim(), aCargoDe: form.aCargoDe.trim(),
       email: form.email.trim(), prayerRequest: form.prayerRequest.trim(),
       metodoInvitacion: form.metodoInvitacion,
       fechaIngreso: form.fechaIngreso,
-      edad: '', mesCumple: '', diaCumple: '', ausencias: 0,
-      lastCallDate: null, callConfirmed: false
+      edad: '', ausencias: 0,
+      mesCumple: form.mesCumple, diaCumple: form.diaCumple,
+      fechaNacimiento: form.mesCumple && form.diaCumple
+        ? `2000-${String(form.mesCumple).padStart(2, '0')}-${String(form.diaCumple).padStart(2, '0')}`
+        : '',
+      llamadas: llamada ? [llamada] : [],
+      lastCallDate: llamada ? llamada.ts : null,
+      lastCallResult: llamada ? llamada.resultado : null,
+      callConfirmed: false
     });
     if (result.success) {
       setFeedback({ type: 'success', msg: `${form.nombre} registrado/a en ${REDES.find(r => r.id === selectedRed).nombre}` });
@@ -221,19 +234,19 @@ const ConsolidacionPanel = () => {
                 </button>
               ))}
             </div>
-            <form onSubmit={handleSubmit} className="consol-form" style={{ '--c1': redConfig.color }}>
+            <form onSubmit={handleSubmit} noValidate className="consol-form" style={{ '--c1': redConfig.color }}>
               <div className="consol-fields-grid">
                 <div className="form-group">
-                  <label>Nombre *</label>
-                  <input value={form.nombre} onChange={handleChange('nombre')} placeholder="Nombre" required autoComplete="off" />
+                  <label>Nombre</label>
+                  <input value={form.nombre} onChange={handleFiltered('nombre', onlyLetters)} placeholder="Nombre" autoComplete="off" />
                 </div>
                 <div className="form-group">
-                  <label>Apellido *</label>
-                  <input value={form.apellido} onChange={handleChange('apellido')} placeholder="Apellido" required autoComplete="off" />
+                  <label>Apellido</label>
+                  <input value={form.apellido} onChange={handleFiltered('apellido', onlyLetters)} placeholder="Apellido" autoComplete="off" />
                 </div>
                 <div className="form-group">
-                  <label>Teléfono *</label>
-                  <input value={form.telefono} onChange={handleChange('telefono')} placeholder="+57 300 000 0000" type="tel" required autoComplete="off" />
+                  <label>Teléfono</label>
+                  <input value={form.telefono} onChange={handleFiltered('telefono', onlyDigits)} placeholder="3001234567" type="tel" inputMode="numeric" autoComplete="off" />
                 </div>
                 <div className="form-group">
                   <label>Email</label>
@@ -252,7 +265,43 @@ const ConsolidacionPanel = () => {
                 </div>
                 <div className="form-group">
                   <label>A cargo de</label>
-                  <input value={form.aCargoDe} onChange={handleChange('aCargoDe')} placeholder="Líder responsable" autoComplete="off" />
+                  <input value={form.aCargoDe} onChange={handleFiltered('aCargoDe', onlyLetters)} placeholder="Líder responsable" autoComplete="off" />
+                </div>
+                <div className="form-group">
+                  <label>Cumpleaños</label>
+                  <div className="cumple-row">
+                    <select value={form.mesCumple} onChange={e => setForm(f => ({ ...f, mesCumple: e.target.value, diaCumple: '' }))}>
+                      <option value="">Mes</option>
+                      {MESES.map((m, i) => <option key={i + 1} value={i + 1}>{m}</option>)}
+                    </select>
+                    <select value={form.diaCumple} onChange={handleChange('diaCumple')} disabled={!form.mesCumple}>
+                      <option value="">Día</option>
+                      {Array.from({ length: form.mesCumple ? diasPorMes(parseInt(form.mesCumple)) : 31 }, (_, i) => i + 1).map(d => (
+                        <option key={d} value={d}>{d}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label>¿Contestó la llamada?</label>
+                  <select
+                    value={form.contesto}
+                    onChange={e => setForm(f => ({ ...f, contesto: e.target.value, observacion: e.target.value ? f.observacion : '' }))}
+                  >
+                    <option value="">Sin llamar aún</option>
+                    {RESULTADOS_LLAMADA.map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
+                  </select>
+                </div>
+                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                  <label>Observación de la llamada</label>
+                  <textarea
+                    value={form.observacion}
+                    onChange={handleChange('observacion')}
+                    rows="2"
+                    disabled={!form.contesto}
+                    placeholder={form.contesto ? '(opcional)' : 'Primero elige el resultado de la llamada'}
+                    autoComplete="off"
+                  />
                 </div>
                 <div className="form-group" style={{ gridColumn: '1 / -1' }}>
                   <label>Petición de oración</label>

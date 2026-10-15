@@ -1,40 +1,30 @@
 import { useState, useEffect } from 'react';
-import { addPerson, updatePerson } from '../services/personService';
+import { addPerson, updatePerson, buildCallRecord } from '../services/personService';
 import { getRedInfo } from '../services/redService';
 import { buildWhatsAppLink, buildNewPersonMessage } from '../services/whatsappService';
-
-const MESES = [
-  'Enero','Febrero','Marzo','Abril','Mayo','Junio',
-  'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'
-];
-
-const METODOS_INVITACION = [
-  'Publicidad', 'Volante', 'Familiar', 'Amigo', 'Redes sociales', 'Otro'
-];
-
-const diasPorMes = (mes) => {
-  const dias30 = [4, 6, 9, 11];
-  if (mes === 2) return 29;
-  if (dias30.includes(mes)) return 30;
-  return 31;
-};
+import { METODOS_INVITACION, RESULTADOS_LLAMADA, MESES, diasPorMes, normalizeMetodo } from '../config/opciones';
+import { onlyLetters, onlyDigits } from '../utils/validacion';
 
 const todayISO = () => new Date().toISOString().split('T')[0];
 
+const EMPTY_FORM = () => ({
+  nombre: '',
+  apellido: '',
+  edad: '',
+  email: '',
+  telefono: '',
+  mesCumple: '',
+  diaCumple: '',
+  aCargoDe: '',
+  metodoInvitacion: '',
+  fechaIngreso: todayISO(),
+  prayerRequest: '',
+  contesto: '',
+  observacion: ''
+});
+
 const RegisterForm = ({ red, selectedPerson, onFinish }) => {
-  const [form, setForm] = useState({
-    nombre: '',
-    apellido: '',
-    edad: '',
-    email: '',
-    telefono: '',
-    mesCumple: '',
-    diaCumple: '',
-    aCargoDe: '',
-    metodoInvitacion: '',
-    fechaIngreso: todayISO(),
-    prayerRequest: ''
-  });
+  const [form, setForm] = useState(EMPTY_FORM);
   const [redInfo, setRedInfo] = useState(null);
   const [lastAdded, setLastAdded] = useState(null);
 
@@ -67,9 +57,11 @@ const RegisterForm = ({ red, selectedPerson, onFinish }) => {
         mesCumple: mes,
         diaCumple: dia,
         aCargoDe: selectedPerson.aCargoDe || '',
-        metodoInvitacion: selectedPerson.metodoInvitacion || '',
+        metodoInvitacion: normalizeMetodo(selectedPerson.metodoInvitacion),
         fechaIngreso: selectedPerson.fechaIngreso || todayISO(),
-        prayerRequest: selectedPerson.prayerRequest || ''
+        prayerRequest: selectedPerson.prayerRequest || '',
+        contesto: '',
+        observacion: ''
       });
     } else {
       setForm(f => ({ ...f, fechaIngreso: todayISO() }));
@@ -78,7 +70,7 @@ const RegisterForm = ({ red, selectedPerson, onFinish }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const { mesCumple, diaCumple, ...rest } = form;
+    const { mesCumple, diaCumple, contesto, observacion, ...rest } = form;
 
     const personData = {
       ...rest,
@@ -93,19 +85,23 @@ const RegisterForm = ({ red, selectedPerson, onFinish }) => {
       await updatePerson(red, selectedPerson.id, personData);
       setLastAdded(null);
     } else {
+      // Llamada inicial opcional: solo si eligieron el resultado
+      if (contesto) {
+        const record = buildCallRecord({ resultado: contesto, observacion });
+        personData.llamadas = [record];
+        personData.lastCallDate = record.ts;
+        personData.lastCallResult = contesto;
+      }
       await addPerson(red, personData);
       setLastAdded({ nombre: form.nombre, apellido: form.apellido, telefono: form.telefono });
     }
     onFinish();
-    setForm({
-      nombre: '', apellido: '', edad: '', email: '', telefono: '',
-      mesCumple: '', diaCumple: '', aCargoDe: '',
-      metodoInvitacion: '', fechaIngreso: todayISO(), prayerRequest: ''
-    });
+    setForm(EMPTY_FORM());
   };
 
   const diasDisponibles = form.mesCumple ? diasPorMes(parseInt(form.mesCumple)) : 31;
   const set = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }));
+  const setFiltered = (field, filter) => (e) => setForm(f => ({ ...f, [field]: filter(e.target.value) }));
 
   return (
     <div className="register-form">
@@ -129,20 +125,20 @@ const RegisterForm = ({ red, selectedPerson, onFinish }) => {
         </div>
       )}
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} noValidate>
         <div className="form-group">
           <label>Nombre</label>
-          <input value={form.nombre} onChange={set('nombre')} required placeholder="Nombre" />
+          <input value={form.nombre} onChange={setFiltered('nombre', onlyLetters)} placeholder="Nombre" autoComplete="off" />
         </div>
 
         <div className="form-group">
           <label>Apellido</label>
-          <input value={form.apellido} onChange={set('apellido')} required placeholder="Apellido" />
+          <input value={form.apellido} onChange={setFiltered('apellido', onlyLetters)} placeholder="Apellido" autoComplete="off" />
         </div>
 
         <div className="form-group">
           <label>Teléfono</label>
-          <input value={form.telefono} onChange={set('telefono')} required placeholder="+57 300 000 0000" type="tel" />
+          <input value={form.telefono} onChange={setFiltered('telefono', onlyDigits)} placeholder="3001234567" type="tel" inputMode="numeric" />
         </div>
 
         <div className="form-group">
@@ -152,17 +148,17 @@ const RegisterForm = ({ red, selectedPerson, onFinish }) => {
 
         <div className="form-group">
           <label>Edad</label>
-          <input type="number" value={form.edad} onChange={set('edad')} required min="1" max="120" placeholder="25" />
+          <input value={form.edad} onChange={setFiltered('edad', v => onlyDigits(v).slice(0, 3))} placeholder="25" inputMode="numeric" />
         </div>
 
         <div className="form-group">
           <label>Cumpleaños</label>
           <div className="cumple-row">
-            <select value={form.mesCumple} onChange={e => setForm(f => ({ ...f, mesCumple: e.target.value, diaCumple: '' }))} required>
+            <select value={form.mesCumple} onChange={e => setForm(f => ({ ...f, mesCumple: e.target.value, diaCumple: '' }))}>
               <option value="">Mes</option>
               {MESES.map((m, i) => <option key={i+1} value={i+1}>{m}</option>)}
             </select>
-            <select value={form.diaCumple} onChange={set('diaCumple')} required disabled={!form.mesCumple}>
+            <select value={form.diaCumple} onChange={set('diaCumple')} disabled={!form.mesCumple}>
               <option value="">Día</option>
               {Array.from({ length: diasDisponibles }, (_, i) => i + 1).map(d => (
                 <option key={d} value={d}>{d}</option>
@@ -186,13 +182,36 @@ const RegisterForm = ({ red, selectedPerson, onFinish }) => {
 
         <div className="form-group">
           <label>A cargo de</label>
-          <input value={form.aCargoDe} onChange={set('aCargoDe')} placeholder="Nombre del responsable" />
+          <input value={form.aCargoDe} onChange={setFiltered('aCargoDe', onlyLetters)} placeholder="Nombre del responsable" autoComplete="off" />
         </div>
 
         <div className="form-group">
           <label>Petición de oración</label>
           <textarea value={form.prayerRequest} onChange={set('prayerRequest')} rows="2" placeholder="(opcional)" />
         </div>
+
+        {!selectedPerson && (
+          <>
+            <div className="form-group">
+              <label>¿Contestó la llamada?</label>
+              <select value={form.contesto} onChange={e => setForm(f => ({ ...f, contesto: e.target.value, observacion: e.target.value ? f.observacion : '' }))}>
+                <option value="">Sin llamar aún</option>
+                {RESULTADOS_LLAMADA.map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label>Observación de la llamada</label>
+              <textarea
+                value={form.observacion}
+                onChange={set('observacion')}
+                rows="2"
+                disabled={!form.contesto}
+                placeholder={form.contesto ? '(opcional)' : 'Primero elige el resultado de la llamada'}
+              />
+            </div>
+          </>
+        )}
 
         <button className="btn-submit">
           {selectedPerson ? 'Actualizar' : 'Registrar'}

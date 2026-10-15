@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { addAttendanceRecord, addCallRecord } from '../services/personService';
+import { hasCallThisWeek } from '../services/callAlertService';
+import { RESULTADOS_LLAMADA } from '../config/opciones';
 
 const SERVICIOS = [
   { id: 'sabado',    label: 'Sábado' },
@@ -7,20 +9,16 @@ const SERVICIOS = [
   { id: 'miercoles', label: 'Miércoles' }
 ];
 
-const RESULTADOS_LLAMADA = [
-  { id: 'contesto',    label: 'Contestó',    cls: 'call-contesto' },
-  { id: 'no_contesto', label: 'No contestó', cls: 'call-no-contesto' },
-  { id: 'desinteres',  label: 'Desinterés',  cls: 'call-desinteres' }
-];
-
 const AttendanceSection = ({ person, red, onUpdate }) => {
   const [markingServicio, setMarkingServicio] = useState(null);
   const [markingCall, setMarkingCall] = useState(false);
+  const [callObservacion, setCallObservacion] = useState('');
   const [saving, setSaving] = useState(false);
 
   const asistencias = [...(person.asistencias || [])].sort((a, b) => b.id - a.id).slice(0, 10);
   const llamadas = [...(person.llamadas || [])].sort((a, b) => b.ts?.localeCompare(a.ts || '') || 0).slice(0, 5);
   const lastCall = llamadas[0];
+  const calledThisWeek = hasCallThisWeek(person);
 
   const handleMarkAsistencia = async (asistio) => {
     if (!markingServicio) return;
@@ -33,10 +31,16 @@ const AttendanceSection = ({ person, red, onUpdate }) => {
 
   const handleMarkCall = async (resultado) => {
     setSaving(true);
-    const result = await addCallRecord(red, person.id, { resultado });
+    const result = await addCallRecord(red, person.id, { resultado, observacion: callObservacion });
     if (result.success) onUpdate();
     setSaving(false);
     setMarkingCall(false);
+    setCallObservacion('');
+  };
+
+  const cancelCall = () => {
+    setMarkingCall(false);
+    setCallObservacion('');
   };
 
   const lastCallLabel = (resultado) => {
@@ -119,7 +123,10 @@ const AttendanceSection = ({ person, red, onUpdate }) => {
       {/* ─── Llamada ─── */}
       <div className="att-block">
         <div className="att-block-header">
-          <span className="att-block-label">Llamada</span>
+          <span className="att-block-label">Llamada semanal</span>
+          <span className={`call-week-chip ${calledThisWeek ? 'call-week-ok' : 'call-week-pending'}`}>
+            {calledThisWeek ? 'Esta semana ✓' : 'Pendiente esta semana'}
+          </span>
           {lastCall && (
             <span className={`last-call-chip ${callResultCls(lastCall.resultado)}`}>
               {lastCallLabel(lastCall.resultado)} — {lastCall.fecha}
@@ -128,40 +135,53 @@ const AttendanceSection = ({ person, red, onUpdate }) => {
         </div>
 
         {markingCall ? (
-          <div className="call-options-row">
-            {RESULTADOS_LLAMADA.map(r => (
+          <div className="call-form">
+            <textarea
+              className="call-observacion"
+              value={callObservacion}
+              onChange={e => setCallObservacion(e.target.value)}
+              rows="2"
+              placeholder="Observación (opcional)"
+              disabled={saving}
+            />
+            <div className="call-options-row">
+              {RESULTADOS_LLAMADA.map(r => (
+                <button
+                  key={r.id}
+                  className={`btn-call-result ${r.cls}`}
+                  onClick={() => handleMarkCall(r.id)}
+                  disabled={saving}
+                >
+                  {r.label}
+                </button>
+              ))}
               <button
-                key={r.id}
-                className={`btn-call-result ${r.cls}`}
-                onClick={() => handleMarkCall(r.id)}
+                className="btn-att-cancel"
+                onClick={cancelCall}
                 disabled={saving}
               >
-                {r.label}
+                Cancelar
               </button>
-            ))}
-            <button
-              className="btn-att-cancel"
-              onClick={() => setMarkingCall(false)}
-              disabled={saving}
-            >
-              Cancelar
-            </button>
+            </div>
           </div>
         ) : (
           <button
             className="btn-registrar-llamada"
             onClick={() => setMarkingCall(true)}
           >
-            Registrar llamada
+            Registrar llamada de la semana
           </button>
         )}
 
-        {llamadas.length > 1 && (
-          <div className="call-history-mini">
-            {llamadas.slice(1).map((l, i) => (
-              <span key={i} className={`call-hist-chip ${callResultCls(l.resultado)}`}>
-                {lastCallLabel(l.resultado)}
-              </span>
+        {llamadas.length > 0 && (
+          <div className="call-history-list">
+            {llamadas.map((l, i) => (
+              <div key={i} className="call-hist-item">
+                <span className={`call-hist-chip ${callResultCls(l.resultado)}`}>
+                  {lastCallLabel(l.resultado)} — {l.fecha}
+                </span>
+                {l.observacion && <span className="call-hist-obs">{l.observacion}</span>}
+              </div>
             ))}
           </div>
         )}

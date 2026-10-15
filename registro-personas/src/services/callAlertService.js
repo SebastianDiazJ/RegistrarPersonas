@@ -75,3 +75,18 @@ export const getCallAlertSummary = (personas) => {
     percentage: personas.length > 0 ? Math.round((upToDate.length / personas.length) * 100) : 0
   };
 };
+
+const startOfWeek = (date) => {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); // semana inicia el lunes
+  return d;
+};
+
+/**
+ * Indica si la persona ya tiene una llamada registrada en la semana actual (lunes a domingo)
+ */
+export const hasCallThisWeek = (persona) => {
+  const weekStart = startOfWeek(new Date());
+  return (persona.llamadas || []).some(l => l.ts && new Date(l.ts) >= weekStart);
+};

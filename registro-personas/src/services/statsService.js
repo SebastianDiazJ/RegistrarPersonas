@@ -1,3 +1,5 @@
+import { normalizeMetodo } from '../config/opciones';
+
 const SERVICIOS = ['sabado', 'domingo', 'miercoles'];
 
 export const computeRedStats = (personas, { desde, hasta } = {}) => {
@@ -54,7 +56,7 @@ export const computeRedStats = (personas, { desde, hasta } = {}) => {
   // Método de invitación
   const metodoCount = {};
   personas.forEach(p => {
-    const m = p.metodoInvitacion || 'Sin registrar';
+    const m = normalizeMetodo(p.metodoInvitacion) || 'Sin registrar';
     metodoCount[m] = (metodoCount[m] || 0) + 1;
   });
 

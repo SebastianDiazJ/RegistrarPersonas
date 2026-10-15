@@ -3178,3 +3178,30 @@ html { scroll-behavior: smooth; }
   color: var(--t2);
 }
 .pastoral-compare-metodo strong { color: var(--t1); }
+
+/* ── Llamada semanal + observación ── */
+.call-week-chip {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 20px;
+}
+.call-week-ok      { background: #D1FAE5; color: #065F46; }
+.call-week-pending { background: #FEF3C7; color: #92400E; }
+
+.call-form { display: flex; flex-direction: column; gap: 0.4rem; }
+.call-observacion {
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  border: 1.5px solid var(--border);
+  border-radius: 7px;
+  font-family: inherit;
+  font-size: 0.78rem;
+  resize: vertical;
+}
+
+.call-history-list { display: flex; flex-direction: column; gap: 0.3rem; margin-top: 0.3rem; }
+.call-hist-item { display: flex; flex-direction: column; gap: 0.1rem; align-items: flex-start; }
+.call-hist-obs { font-size: 0.72rem; color: var(--t2); padding-left: 0.4rem; }
+
+.patt-obs { font-size: 0.6rem; font-weight: 500; opacity: 0.9; max-width: 160px; white-space: normal; }

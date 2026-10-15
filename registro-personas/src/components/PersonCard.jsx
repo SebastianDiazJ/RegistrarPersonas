@@ -1,4 +1,5 @@
 import AttendanceSection from './AttendanceSection';
+import { normalizeMetodo } from '../config/opciones';
 
 const MESES = [
   '','Enero','Febrero','Marzo','Abril','Mayo','Junio',
@@ -54,7 +55,7 @@ const PersonCard = ({ person, red, onDelete, onEdit, onUpdate }) => {
         {person.metodoInvitacion && (
           <p>
             <span className="detail-pill-label">Via</span>
-            {person.metodoInvitacion}
+            {normalizeMetodo(person.metodoInvitacion)}
           </p>
         )}
         {person.aCargoDe && (
