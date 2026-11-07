@@ -19,16 +19,16 @@ export const getAllRedesInfo = async (redIds) => {
   return map;
 };
 
-export const updateRedLeaderInfo = async (red, { liderNombre, whatsapp }) => {
+export const updateRedLeaderInfo = async (red, { liderNombre, whatsapp, liderEmail = '' }) => {
   try {
     const ref = doc(db, 'redes', red);
     const prev = (await getDoc(ref)).data() || {};
-    await setDoc(ref, { liderNombre, whatsapp }, { merge: true });
+    await setDoc(ref, { liderNombre, whatsapp, liderEmail }, { merge: true });
     await logCambio({
       accion: 'editar_red', entidad: 'red', entidadId: red, red,
       resumen: `Editó datos de contacto de la red ${red}`,
-      antes: { liderNombre: prev.liderNombre, whatsapp: prev.whatsapp },
-      despues: { liderNombre, whatsapp }
+      antes: { liderNombre: prev.liderNombre, whatsapp: prev.whatsapp, liderEmail: prev.liderEmail },
+      despues: { liderNombre, whatsapp, liderEmail }
     });
     return { success: true };
   } catch (error) {

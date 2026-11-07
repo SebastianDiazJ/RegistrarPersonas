@@ -4,6 +4,7 @@ import { getAllPersons } from '../services/personService';
 import { getAllRedesInfo, updateRedLeaderInfo } from '../services/redService';
 import { computeRedStats, computeLeaderBreakdown } from '../services/statsService';
 import { getCallAlertSummary } from '../services/callAlertService';
+import { sanitizeEmail, sanitizeName, isValidEmail, onlyDigits } from '../utils/validacion';
 
 // Vista global de todas las redes (resumen, líderes y contacto, estadísticas
 // comparativas). La comparten los módulos Pastoral y Consolidación.
@@ -140,7 +141,8 @@ export const LideresTab = ({ rawPersonas, redesInfo, onSaved }) => {
     REDES.forEach(r => {
       drafts[r.id] = {
         liderNombre: redesInfo[r.id]?.liderNombre || '',
-        whatsapp: redesInfo[r.id]?.whatsapp || ''
+        whatsapp: redesInfo[r.id]?.whatsapp || '',
+        liderEmail: redesInfo[r.id]?.liderEmail || ''
       };
     });
     return drafts;
@@ -175,12 +177,19 @@ export const LideresTab = ({ rawPersonas, redesInfo, onSaved }) => {
     setSavingRed(redId);
     setSavedFeedback(null);
     const draft = leaderDrafts[redId];
+    const liderEmail = sanitizeEmail(draft.liderEmail);
+    if (liderEmail && !isValidEmail(liderEmail)) {
+      setSavedFeedback({ redId, ok: false, msg: 'El correo del líder no es válido.' });
+      setSavingRed(null);
+      return;
+    }
     const result = await updateRedLeaderInfo(redId, {
-      liderNombre: draft.liderNombre.trim(),
-      whatsapp: draft.whatsapp.trim()
+      liderNombre: sanitizeName(draft.liderNombre, 80),
+      whatsapp: onlyDigits(draft.whatsapp).slice(0, 20),
+      liderEmail
     });
     if (result.success) {
-      onSaved(redId, draft);
+      onSaved(redId, { ...draft, liderEmail });
       setSavedFeedback({ redId, ok: true });
     } else {
       setSavedFeedback({ redId, ok: false, msg: result.error });
@@ -191,7 +200,7 @@ export const LideresTab = ({ rawPersonas, redesInfo, onSaved }) => {
   return (
     <div className="pastoral-lideres-grid">
       {REDES.map(red => {
-        const draft = leaderDrafts[red.id] || { liderNombre: '', whatsapp: '' };
+        const draft = leaderDrafts[red.id] || { liderNombre: '', whatsapp: '', liderEmail: '' };
         const breakdown = leaderBreakdownByRed[red.id] || [];
         const feedback = savedFeedback && savedFeedback.redId === red.id ? savedFeedback : null;
         return (
@@ -218,6 +227,16 @@ export const LideresTab = ({ rawPersonas, redesInfo, onSaved }) => {
                 placeholder="Ej: 573001234567"
                 type="tel"
                 maxLength={20}
+              />
+            </div>
+            <div className="form-group">
+              <label>Correo del líder (avisos de personas nuevas)</label>
+              <input
+                value={draft.liderEmail}
+                onChange={handleDraftChange(red.id, 'liderEmail')}
+                placeholder="lider@correo.com"
+                type="email"
+                maxLength={100}
               />
             </div>
 

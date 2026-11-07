@@ -3379,3 +3379,10 @@ html { scroll-behavior: smooth; }
   object-fit: cover;
 }
 @media (max-width: 380px) { .lobby-logo { width: 52px; height: 52px; border-radius: 12px; } }
+
+/* Estados de envío de correos y enlaces en tablas */
+.pg-estado { display: inline-block; font-size: 0.68rem; font-weight: 700; padding: 0.1rem 0.5rem; border-radius: 99px; border: 1px solid var(--border); color: var(--t2); }
+.pg-estado-ok  { color: var(--success); border-color: var(--success); }
+.pg-estado-err { color: var(--danger);  border-color: var(--danger); }
+.pg-estado-pend { color: var(--warn);   border-color: var(--warn); }
+.pg-link { color: var(--t1); font-weight: 600; font-size: 0.75rem; text-decoration: underline; white-space: nowrap; }

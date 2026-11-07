@@ -8,6 +8,7 @@ import { buildWhatsAppLink, buildNewPersonMessage } from '../services/whatsappSe
 import PersonasTable from '../components/PersonasTable';
 import BaseGeneralPanel from '../components/BaseGeneralPanel';
 import HistorialPanel from '../components/HistorialPanel';
+import AnunciosPanel from '../components/AnunciosPanel';
 import { VistaGlobalTab } from '../components/VistaGlobal';
 import { METODOS_INVITACION, RESULTADOS_LLAMADA, MESES, diasPorMes } from '../config/opciones';
 import { onlyLetters, onlyDigits } from '../utils/validacion';
@@ -212,6 +213,7 @@ const ConsolidacionPanel = () => {
             { id: 'resumen',      label: 'Resumen general' },
             { id: 'lideres',      label: 'Líderes y contacto' },
             { id: 'comparativas', label: 'Estadísticas comparativas' },
+            { id: 'anuncios',     label: 'Anuncios' },
             { id: 'base',         label: 'Base general' },
             { id: 'historial',    label: 'Historial de cambios' }
           ].map(t => (
@@ -576,6 +578,8 @@ const ConsolidacionPanel = () => {
 
         {/* ── Vista global (mismo contenido que el módulo Pastoral) ── */}
         {['resumen', 'lideres', 'comparativas'].includes(activeTab) && <VistaGlobalTab key={activeTab} tab={activeTab} />}
+
+        {activeTab === 'anuncios' && <AnunciosPanel />}
 
         {activeTab === 'base' && <BaseGeneralPanel />}
 

@@ -29,6 +29,7 @@ export const ACCIONES = {
   reiniciar_ausencias: 'Reiniciar ausencias',
   editar_red:      'Editar datos de red',
   exportar_excel:  'Exportar a Excel',
+  crear_anuncio:   'Crear anuncio',
   vaciar_base_inicio: 'Vaciar base: inicio',
   vaciar_base:     'Vaciar base de personas'
 };

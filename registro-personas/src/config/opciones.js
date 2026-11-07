@@ -35,7 +35,8 @@ export const ESTADOS_CIVILES = [
 export const HABEAS_DATA_TEXTO =
   'Autorizo de manera libre, previa, expresa e informada el tratamiento de mis datos personales ' +
   '(nombre, cédula, teléfono, correo, fecha de cumpleaños, estado civil y petición de oración) por parte de la iglesia, ' +
-  'con la finalidad de registrarme, contactarme, hacerme seguimiento pastoral y asignarme a una red de la iglesia. ' +
+  'con la finalidad de registrarme, contactarme, hacerme seguimiento pastoral y asignarme a una red de la iglesia, ' +
+  'y de enviarme por correo electrónico mensajes de bienvenida, felicitaciones de cumpleaños y anuncios de la iglesia (puedo cancelar esta suscripción en cualquier momento desde el enlace de cada correo). ' +
   'Sé que son datos personales cuyo tratamiento es voluntario, que no serán vendidos ni compartidos con terceros ajenos a la iglesia, ' +
   'y que puedo conocer, actualizar, rectificar o solicitar la supresión de mis datos, o revocar esta autorización, ' +
   'en cualquier momento comunicándome con el equipo pastoral.';

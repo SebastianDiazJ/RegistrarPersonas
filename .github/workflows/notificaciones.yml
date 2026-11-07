@@ -1,0 +1,49 @@
+name: Notificaciones
+
+# Correos automáticos de la Iglesia La Vid (bienvenida, cumpleaños, aviso a líderes y anuncios).
+# Gratis: GitHub Actions en repositorio público + Gmail. Ver notificaciones/README.md.
+on:
+  schedule:
+    - cron: '*/10 * * * *'   # nuevos + anuncios (cada ~10 min; GitHub puede retrasarlo)
+    - cron: '0 12 * * *'     # cumpleaños: 7:00 a. m. hora de Colombia
+  workflow_dispatch:
+    inputs:
+      modo:
+        description: 'nuevos | cumples | todo'
+        default: 'todo'
+      simulacion:
+        description: 'true = no envía correos, solo simula'
+        default: 'false'
+
+# Una sola ejecución a la vez: evita correos duplicados.
+concurrency:
+  group: notificaciones
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  enviar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: notificaciones
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: notificaciones/package-lock.json
+      - run: npm ci
+      - name: Enviar
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          APP_URL: ${{ secrets.APP_URL }}
+          DRY_RUN: ${{ github.event.inputs.simulacion == 'true' && '1' || '0' }}
+          MODO: ${{ github.event.inputs.modo || (github.event.schedule == '0 12 * * *' && 'cumples' || 'nuevos') }}
+        run: node src/index.mjs --modo="$MODO"

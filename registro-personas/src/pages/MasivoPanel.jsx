@@ -178,6 +178,7 @@ const MasivoPanel = () => {
                 <div className="form-group">
                   <label>Email</label>
                   <input value={form.email} onChange={setFiltered('email', v => v.slice(0, 100))} placeholder="correo@ejemplo.com" type="email" autoComplete="off" />
+                  <span className="masivo-aviso" style={{ margin: 0 }}>Con correo, la persona recibe una bienvenida y una felicitación de cumpleaños.</span>
                   <FieldError msg={errors.email} />
                 </div>
                 <div className="form-group">

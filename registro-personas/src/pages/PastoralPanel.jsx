@@ -5,6 +5,7 @@ import { REDES } from '../config/redes';
 import PersonasTable from '../components/PersonasTable';
 import BaseGeneralPanel from '../components/BaseGeneralPanel';
 import HistorialPanel from '../components/HistorialPanel';
+import AnunciosPanel from '../components/AnunciosPanel';
 import { useVistaGlobal, GlobalKpis, ResumenTab, LideresTab, ComparativasTab } from '../components/VistaGlobal';
 
 const PastoralPanel = () => {
@@ -54,6 +55,7 @@ const PastoralPanel = () => {
                 { id: 'personas',     label: 'Personas por red' },
                 { id: 'lideres',      label: 'Líderes y contacto' },
                 { id: 'estadisticas', label: 'Estadísticas comparativas' },
+                { id: 'anuncios',     label: 'Anuncios' },
                 { id: 'base',         label: 'Base general' },
                 { id: 'historial',    label: 'Historial de cambios' }
               ].map(t => (
@@ -143,6 +145,8 @@ const PastoralPanel = () => {
             )}
 
             {activeTab === 'estadisticas' && <ComparativasTab rawPersonas={rawPersonas} />}
+
+            {activeTab === 'anuncios' && <AnunciosPanel />}
 
             {activeTab === 'base' && <BaseGeneralPanel />}
 

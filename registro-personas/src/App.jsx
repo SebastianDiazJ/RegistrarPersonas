@@ -12,6 +12,7 @@ import PastoralPanel from './pages/PastoralPanel';
 import MasivoLogin from './pages/MasivoLogin';
 import MasivoPanel from './pages/MasivoPanel';
 import SplashScreen from './components/SplashScreen';
+import BajaPage from './pages/BajaPage';
 import './App.css';
 
 /* ── Theme Toggle ─────────────────────────────────────── */
@@ -135,6 +136,8 @@ function AppRoutes() {
 
         <Route path="/pastoral/login" element={<PastoralLogin />} />
         <Route path="/pastoral" element={<PastoralProtectedRoute />} />
+
+        <Route path="/baja" element={<BajaPage />} />
 
         <Route path="/masivo/login" element={<MasivoLogin />} />
         <Route path="/masivo" element={<MasivoProtectedRoute />} />
