@@ -2,9 +2,10 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/webp" href="/logo-lavid.webp" />
+    <link rel="apple-touch-icon" href="/logo-lavid.webp" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#1B2D45" />
+    <meta name="theme-color" content="#000000" />
     <title>La Vid · Registro de personas</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,15 +13,10 @@
     <script>try{document.documentElement.setAttribute('data-theme',localStorage.getItem('theme')||'light')}catch(e){}</script>
     <style>
       /* Pantalla de carga: visible desde el primer byte, antes de que cargue el JavaScript */
-      .splash{--sp-bg:#ECF0F5;--sp-fg:#0D1B2A;--sp-mute:#526070;--sp-accent:#5B21B6;--sp-leaf:#059669;--sp-track:#D1DAE4;position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:1.5rem;background:var(--sp-bg);color:var(--sp-fg);font-family:'Josefin Sans',system-ui,sans-serif;text-align:center;opacity:1;transition:opacity .45s ease,visibility .45s}
-      :root[data-theme="dark"] .splash{--sp-bg:#0D1B2A;--sp-fg:#ECF0F5;--sp-mute:#8BA0B4;--sp-accent:#A78BFA;--sp-leaf:#34D399;--sp-track:#233347}
+      .splash{--sp-bg:#000;--sp-fg:#fff;--sp-mute:#a3a3a3;--sp-accent:#fff;--sp-track:#262626;position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:1.5rem;background:var(--sp-bg);color:var(--sp-fg);font-family:'Josefin Sans',system-ui,sans-serif;text-align:center;opacity:1;transition:opacity .45s ease,visibility .45s}
       .splash-hide{opacity:0;visibility:hidden;pointer-events:none}
       .splash-inner{display:flex;flex-direction:column;align-items:center;gap:.9rem;max-width:26rem;animation:splashIn .6s ease both}
-      .splash-logo{width:clamp(72px,18vw,104px);height:auto}
-      .splash-grapes circle{fill:var(--sp-accent)}
-      .splash-leaf{fill:var(--sp-leaf)}
-      .splash-stem{stroke:var(--sp-leaf)}
-      .splash-title{font-size:clamp(2.2rem,8vw,3.2rem);font-weight:700;letter-spacing:-.5px;line-height:1.1;margin:0}
+      .splash-logo{width:clamp(200px,58vw,340px);height:auto;display:block}
       .splash-text{font-size:clamp(.9rem,3.4vw,1.05rem);color:var(--sp-mute);line-height:1.5;font-weight:400;margin:0}
       .splash-bar{width:min(220px,60vw);height:4px;border-radius:4px;background:var(--sp-track);overflow:hidden;margin-top:.6rem}
       .splash-bar span{display:block;height:100%;width:40%;border-radius:4px;background:var(--sp-accent);animation:splashBar 1.2s ease-in-out infinite}
@@ -33,16 +29,7 @@
     <div id="root">
       <div class="splash" role="status">
         <div class="splash-inner">
-          <svg class="splash-logo" viewBox="0 0 64 64" aria-hidden="true">
-            <path class="splash-stem" d="M32 6c0 6-2 9-6 11" fill="none" stroke-width="3" stroke-linecap="round"></path>
-            <path class="splash-leaf" d="M32 9c5-6 14-6 19 0-5 6-14 6-19 0z"></path>
-            <g class="splash-grapes">
-              <circle cx="20" cy="28" r="7"></circle><circle cx="34" cy="28" r="7"></circle><circle cx="46" cy="28" r="7"></circle>
-              <circle cx="27" cy="40" r="7"></circle><circle cx="41" cy="40" r="7"></circle>
-              <circle cx="34" cy="52" r="7"></circle>
-            </g>
-          </svg>
-          <h1 class="splash-title">La Vid</h1>
+          <img class="splash-logo" src="/logo-lavid.webp" alt="Iglesia La Vid" width="340" height="340">
           <p class="splash-text">Aplicación de registro y manejo de datos para la iglesia La Vid</p>
           <div class="splash-bar" aria-hidden="true"><span></span></div>
         </div>

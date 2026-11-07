@@ -36,9 +36,12 @@ const Lobby = () => {
   return (
     <div className="lobby">
       <div className="lobby-header">
-        <div>
+        <div className="lobby-brand">
+          <img className="lobby-logo" src="/logo-lavid.webp" alt="Iglesia La Vid" width="64" height="64" />
+          <div>
           <span className="lobby-subtitle">Iglesia La Vid · Sistema de Registro</span>
           <h1 className="lobby-title">Redes Iglesia</h1>
+          </div>
         </div>
         <div className="lobby-total">
           <span className="total-number">{loadingCounts ? '—' : total}</span>
