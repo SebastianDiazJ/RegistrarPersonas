@@ -1,4 +1,5 @@
 import { normalizeMetodo } from '../config/opciones';
+import { getCallAlertStatus } from './callAlertService';
 
 const SERVICIOS = ['sabado', 'domingo', 'miercoles'];
 
@@ -51,6 +52,9 @@ export const computeRedStats = (personas, { desde, hasta } = {}) => {
   });
 
   const sinContactar = personas.filter(p => !p.lastCallDate).length;
+  // "Por llamar" = nunca llamadas + con la última llamada vencida (48 h o más)
+  const vencidas = personas.filter(p => p.lastCallDate && getCallAlertStatus(p).isAlert).length;
+  const alDia = personas.length - sinContactar - vencidas;
   const inasistentesLegacy = personas.filter(p => (p.ausencias || 0) >= 3).length;
 
   // Método de invitación
@@ -67,6 +71,9 @@ export const computeRedStats = (personas, { desde, hasta } = {}) => {
     asistenciaPorServicio,
     llamadasStats,
     sinContactar,
+    vencidas,
+    alDia,
+    porLlamar: sinContactar + vencidas,
     inasistentesLegacy,
     metodoCount,
     rangoDesde: cutoffFrom.toISOString().split('T')[0],

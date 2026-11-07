@@ -525,11 +525,13 @@ const ConsolidacionPanel = () => {
                       { key: 'contesto',    label: 'Contestaron',   color: '#059669' },
                       { key: 'no_contesto', label: 'No contestaron', color: '#D97706' },
                       { key: 'desinteres',  label: 'Desinterés',    color: '#DC2626' },
-                      { key: 'sinContactar', label: 'Sin contactar', color: '#526070', fromRoot: true }
+                      { key: 'sinContactar', label: 'Sin contactar', color: '#526070', fromRoot: true },
+                      { key: 'vencidas', label: 'Vencidas (48h+)', color: '#D97706', fromRoot: true },
+                      { key: 'porLlamar', label: 'Por llamar', color: '#DC2626', fromRoot: true }
                     ].map(({ key, label, color, fromRoot }) => (
                       <div key={key} className="stats-kpi">
                         <span className="stats-kpi-num" style={color ? { color } : {}}>
-                          {fromRoot ? currentStats.sinContactar : currentStats.llamadasStats[key]}
+                          {fromRoot ? currentStats[key] : currentStats.llamadasStats[key]}
                         </span>
                         <span className="stats-kpi-label">{label}</span>
                       </div>

@@ -4,6 +4,8 @@ import { getAllPersons } from '../services/personService';
 import { getAllRedesInfo, updateRedLeaderInfo } from '../services/redService';
 import { computeRedStats, computeLeaderBreakdown } from '../services/statsService';
 import { getCallAlertSummary } from '../services/callAlertService';
+import { computeInsights, sumInsights } from '../services/insightsService';
+import { SeguimientoKpis, TarjetasRed, PorLlamarPanel, ResponsablesPanel, TendenciasPanel, EmbudoPorRed } from './SeguimientoStats';
 import { sanitizeEmail, sanitizeName, isValidEmail, onlyDigits } from '../utils/validacion';
 
 // Vista global de todas las redes (resumen, líderes y contacto, estadísticas
@@ -63,15 +65,26 @@ export const useVistaGlobal = () => {
     return { total, contactados, pendientes, nuncaContactados, nuevosEsteMes };
   }, [callSummaryByRed, statsByRed]);
 
+  const insightsByRed = useMemo(() => {
+    const map = {};
+    REDES.forEach(r => { map[r.id] = computeInsights(rawPersonas[r.id] || []); });
+    return map;
+  }, [rawPersonas]);
+
+  const insightsTotal = useMemo(() => sumInsights(Object.values(insightsByRed)), [insightsByRed]);
+
   const updateRedInfo = (redId, draft) => setRedesInfo(prev => ({ ...prev, [redId]: { ...prev[redId], ...draft } }));
 
-  return { rawPersonas, redesInfo, loading, reload: loadAll, statsByRed, callSummaryByRed, globalTotals, updateRedInfo };
+  return {
+    rawPersonas, redesInfo, loading, reload: loadAll,
+    statsByRed, callSummaryByRed, globalTotals, insightsByRed, insightsTotal, updateRedInfo
+  };
 };
 
 /* ── KPIs globales ──────────────────────────────────────────────────────── */
-export const GlobalKpis = ({ rawPersonas, globalTotals }) => (
+export const GlobalKpis = ({ rawPersonas, globalTotals, insightsTotal, mostrarTotales = true }) => (
   <>
-    <div className="consol-stats-row">
+    {mostrarTotales && <div className="consol-stats-row">
       <div className="consol-total-card">
         <span className="consol-total-num">{globalTotals.total}</span>
         <span className="consol-total-label">Total personas</span>
@@ -82,56 +95,19 @@ export const GlobalKpis = ({ rawPersonas, globalTotals }) => (
           <span className="consol-net-name">{red.nombre}</span>
         </div>
       ))}
-    </div>
+    </div>}
 
-    <div className="pastoral-kpi-row">
-      <div className="stats-kpi">
-        <span className="stats-kpi-num" style={{ color: '#059669' }}>{globalTotals.contactados}</span>
-        <span className="stats-kpi-label">Contactados al día</span>
-      </div>
-      <div className="stats-kpi">
-        <span className="stats-kpi-num" style={{ color: '#DC2626' }}>{globalTotals.pendientes}</span>
-        <span className="stats-kpi-label">Pendientes 48h+</span>
-      </div>
-      <div className="stats-kpi">
-        <span className="stats-kpi-num" style={{ color: '#D97706' }}>{globalTotals.nuncaContactados}</span>
-        <span className="stats-kpi-label">Nunca contactados</span>
-      </div>
-      <div className="stats-kpi">
-        <span className="stats-kpi-num">{globalTotals.nuevosEsteMes}</span>
-        <span className="stats-kpi-label">Nuevos este mes</span>
-      </div>
-    </div>
+    <SeguimientoKpis total={insightsTotal} />
   </>
 );
 
 /* ── Resumen general ────────────────────────────────────────────────────── */
-export const ResumenTab = ({ redesInfo, statsByRed, callSummaryByRed }) => (
-  <div className="pastoral-resumen-grid">
-    {REDES.map(red => {
-      const cs = callSummaryByRed[red.id];
-      const st = statsByRed[red.id];
-      const lider = redesInfo[red.id]?.liderNombre;
-      return (
-        <div key={red.id} className="pastoral-red-card" style={{ '--c1': red.color }}>
-          <div className="pastoral-red-card-header">
-            <span className="pastoral-red-name">{red.nombre}</span>
-            <span className="pastoral-red-count">{cs.total}</span>
-          </div>
-          {lider && <p className="pastoral-red-lider">Líder: {lider}</p>}
-          <div className="pastoral-red-bar-track">
-            <div className="pastoral-red-bar-fill" style={{ width: `${cs.percentage}%`, background: red.color }} />
-          </div>
-          <span className="pastoral-red-pct">{cs.percentage}% al día en llamadas</span>
-          <div className="pastoral-red-mini-kpis">
-            <div><strong>{cs.needingCall}</strong><span>Pendientes</span></div>
-            <div><strong>{cs.neverCalled}</strong><span>Sin contactar</span></div>
-            <div><strong>{st.nuevosEsteMes}</strong><span>Nuevos/mes</span></div>
-          </div>
-        </div>
-      );
-    })}
-  </div>
+export const ResumenTab = ({ redesInfo, insightsByRed, rawPersonas }) => (
+  <>
+    <TarjetasRed insightsByRed={insightsByRed} redesInfo={redesInfo} />
+    <PorLlamarPanel rawPersonas={rawPersonas} />
+    <ResponsablesPanel rawPersonas={rawPersonas} />
+  </>
 );
 
 /* ── Líderes y contacto ─────────────────────────────────────────────────── */
@@ -318,8 +294,20 @@ export const ComparativasTab = ({ rawPersonas }) => {
     return map;
   }, [rawPersonas, statsDesde, statsHasta]);
 
+  const insightsByRed = useMemo(() => {
+    const map = {};
+    REDES.forEach(r => { map[r.id] = computeInsights(rawPersonas[r.id] || []); });
+    return map;
+  }, [rawPersonas]);
+
   return (
     <div className="consol-stats-detail">
+      <TendenciasPanel rawPersonas={rawPersonas} />
+
+      <h3 className="seg-section-title">Seguimiento por red</h3>
+      <EmbudoPorRed insightsByRed={insightsByRed} />
+
+      <h3 className="seg-section-title">Detalle por período</h3>
       <div className="stats-date-filter">
         <span className="stats-date-label">Período:</span>
         <div className="form-group" style={{ margin: 0, minWidth: '140px' }}>
@@ -396,12 +384,13 @@ export const ComparativasTab = ({ rawPersonas }) => {
 
 /* ── Pestaña autónoma (para módulos que no mantienen el estado global) ──── */
 export const VistaGlobalTab = ({ tab }) => {
-  const { rawPersonas, redesInfo, loading, statsByRed, callSummaryByRed, globalTotals, updateRedInfo } = useVistaGlobal();
+  const { rawPersonas, redesInfo, loading, globalTotals, insightsByRed, insightsTotal, updateRedInfo } = useVistaGlobal();
   if (loading) return <div className="loading">Cargando información de todas las redes...</div>;
   return (
     <>
-      <GlobalKpis rawPersonas={rawPersonas} globalTotals={globalTotals} />
-      {tab === 'resumen' && <ResumenTab redesInfo={redesInfo} statsByRed={statsByRed} callSummaryByRed={callSummaryByRed} />}
+      {/* Consolidación ya muestra los totales por red arriba de sus pestañas */}
+      <GlobalKpis rawPersonas={rawPersonas} globalTotals={globalTotals} insightsTotal={insightsTotal} mostrarTotales={false} />
+      {tab === 'resumen' && <ResumenTab redesInfo={redesInfo} insightsByRed={insightsByRed} rawPersonas={rawPersonas} />}
       {tab === 'lideres' && <LideresTab rawPersonas={rawPersonas} redesInfo={redesInfo} onSaved={updateRedInfo} />}
       {tab === 'comparativas' && <ComparativasTab rawPersonas={rawPersonas} />}
     </>

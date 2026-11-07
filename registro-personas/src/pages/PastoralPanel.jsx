@@ -15,7 +15,7 @@ const PastoralPanel = () => {
   const [activeTab, setActiveTab] = useState('resumen');
   const {
     rawPersonas, redesInfo, loading, reload,
-    statsByRed, callSummaryByRed, globalTotals, updateRedInfo
+    globalTotals, insightsByRed, insightsTotal, updateRedInfo
   } = useVistaGlobal();
 
   // Personas tab
@@ -46,7 +46,7 @@ const PastoralPanel = () => {
           <div className="loading">Cargando información pastoral...</div>
         ) : (
           <>
-            <GlobalKpis rawPersonas={rawPersonas} globalTotals={globalTotals} />
+            <GlobalKpis rawPersonas={rawPersonas} globalTotals={globalTotals} insightsTotal={insightsTotal} />
 
             {/* Tabs */}
             <div className="consol-main-tabs">
@@ -70,7 +70,7 @@ const PastoralPanel = () => {
             </div>
 
             {activeTab === 'resumen' && (
-              <ResumenTab redesInfo={redesInfo} statsByRed={statsByRed} callSummaryByRed={callSummaryByRed} />
+              <ResumenTab redesInfo={redesInfo} insightsByRed={insightsByRed} rawPersonas={rawPersonas} />
             )}
 
             {/* ── Personas por red ── */}
