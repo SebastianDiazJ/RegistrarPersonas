@@ -9,6 +9,12 @@ const REDES = [
   { id: 'senior',  nombre: 'SENIOR',  color: '#B45309' }
 ];
 
+const MODULOS = [
+  { id: 'consolidacion', nombre: 'CONSOLIDACIÓN', desc: 'Registro y control de todas las redes', color: '#1B2D45', ruta: '/consolidacion/login' },
+  { id: 'pastoral',      nombre: 'PASTORAL',      desc: 'Vista general y seguimiento',            color: '#065F46', ruta: '/pastoral/login' },
+  { id: 'masivo',        nombre: 'INGRESO MASIVO', desc: 'Registro por cédula, sin contraseña',   color: '#0F766E', ruta: '/masivo/login' }
+];
+
 const Lobby = () => {
   const navigate = useNavigate();
   const [counts, setCounts] = useState({ xtreme: 0, parejas: 0, '360': 0, senior: 0 });
@@ -31,7 +37,7 @@ const Lobby = () => {
     <div className="lobby">
       <div className="lobby-header">
         <div>
-          <span className="lobby-subtitle">Sistema de Registro</span>
+          <span className="lobby-subtitle">Iglesia La Vid · Sistema de Registro</span>
           <h1 className="lobby-title">Redes Iglesia</h1>
         </div>
         <div className="lobby-total">
@@ -40,6 +46,7 @@ const Lobby = () => {
         </div>
       </div>
 
+      <h2 className="lobby-section-title">Redes</h2>
       <div className="lobby-cards">
         {REDES.map(red => (
           <div
@@ -57,18 +64,23 @@ const Lobby = () => {
         ))}
       </div>
 
-      <div className="lobby-footer-row">
-        <p className="lobby-footer">Sistema de Registro de Redes</p>
-        <button className="lobby-admin-link" onClick={() => navigate('/consolidacion/login')}>
-          Consolidacion
-        </button>
-        <button className="lobby-admin-link" onClick={() => navigate('/pastoral/login')}>
-          Pastoral
-        </button>
-        <button className="lobby-admin-link" onClick={() => navigate('/masivo/login')}>
-          Ingreso masivo
-        </button>
+      <h2 className="lobby-section-title">Módulos</h2>
+      <div className="lobby-cards lobby-cards-modulos">
+        {MODULOS.map(m => (
+          <button
+            key={m.id}
+            type="button"
+            className="lobby-card lobby-card-modulo"
+            style={{ '--c1': m.color }}
+            onClick={() => navigate(m.ruta)}
+          >
+            <span className="lobby-card-desc">{m.desc}</span>
+            <span className="lobby-card-name">{m.nombre}</span>
+          </button>
+        ))}
       </div>
+
+      <p className="lobby-footer">Aplicación de registro y manejo de datos para la iglesia La Vid</p>
     </div>
   );
 };

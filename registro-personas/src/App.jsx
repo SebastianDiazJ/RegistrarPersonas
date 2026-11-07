@@ -11,6 +11,7 @@ import PastoralLogin from './pages/PastoralLogin';
 import PastoralPanel from './pages/PastoralPanel';
 import MasivoLogin from './pages/MasivoLogin';
 import MasivoPanel from './pages/MasivoPanel';
+import SplashScreen from './components/SplashScreen';
 import './App.css';
 
 /* ── Theme Toggle ─────────────────────────────────────── */
@@ -87,9 +88,31 @@ const SetupProtectedRoute = () => {
   return <MigrationPage />;
 };
 
+// Pantalla de carga: se muestra al abrir la app, al menos un instante y hasta que
+// Firebase Auth termine de restaurar la sesión. Después se desvanece y se desmonta.
+const SPLASH_MIN_MS = 1400;
+const SPLASH_FADE_MS = 500;
+
 function AppRoutes() {
+  const { loading } = useAuth();
+  const [minTime, setMinTime] = useState(false);
+  const [gone, setGone] = useState(false);
+  const ready = minTime && !loading;
+
+  useEffect(() => {
+    const t = setTimeout(() => setMinTime(true), SPLASH_MIN_MS);
+    return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    if (!ready) return undefined;
+    const t = setTimeout(() => setGone(true), SPLASH_FADE_MS);
+    return () => clearTimeout(t);
+  }, [ready]);
+
   return (
     <>
+      {!gone && <SplashScreen hiding={ready} />}
       <ThemeToggle />
       <Routes>
         <Route path="/" element={<Lobby />} />

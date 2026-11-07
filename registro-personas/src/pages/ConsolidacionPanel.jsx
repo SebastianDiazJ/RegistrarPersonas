@@ -218,7 +218,7 @@ const ConsolidacionPanel = () => {
             <button
               key={t.id}
               className={`consol-main-tab ${activeTab === t.id ? 'active' : ''}`}
-              onClick={() => setActiveTab(t.id)}
+              onClick={(e) => { setActiveTab(t.id); e.currentTarget.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' }); }}
             >
               {t.label}
             </button>

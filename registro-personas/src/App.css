@@ -3250,3 +3250,121 @@ html { scroll-behavior: smooth; }
   font-size: 0.8rem; font-weight: 800; font-family: inherit; cursor: pointer; letter-spacing: .3px;
 }
 .pg-btn-danger:disabled { opacity: .4; cursor: not-allowed; }
+
+/* ═══════════════════════════════════════════════════════════
+   LOBBY — secciones y tarjetas de módulos (mismo estilo que las redes)
+═══════════════════════════════════════════════════════════ */
+.lobby-header { margin-bottom: 1.75rem; }
+
+.lobby-section-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--t2);
+  margin: 0 0 0.75rem;
+}
+.lobby-cards + .lobby-section-title { margin-top: 2rem; }
+
+.lobby-card-modulo {
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 7.5rem;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.lobby-card-modulo:focus-visible,
+.lobby-card:focus-visible { outline: 2px solid var(--c1); outline-offset: 2px; }
+
+.lobby-card-desc {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--t2);
+  line-height: 1.4;
+  display: block;
+}
+
+.lobby-cards-modulos { grid-template-columns: 1fr; }
+
+.lobby-footer { text-align: center; margin-top: 3rem; line-height: 1.5; }
+
+@media (min-width: 640px) {
+  .lobby-cards-modulos { grid-template-columns: repeat(3, 1fr); }
+}
+@media (min-width: 580px) and (max-width: 859px) {
+  .lobby-cards { grid-template-columns: repeat(2, 1fr); }
+  .lobby-cards-modulos { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE — ajustes generales (móvil / tablet)
+═══════════════════════════════════════════════════════════ */
+/* Pestañas de los paneles: desplazables en horizontal, sin apretarse */
+.consol-main-tabs {
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.consol-main-tabs::-webkit-scrollbar { display: none; }
+.consol-main-tab { flex: 1 0 auto; white-space: nowrap; scroll-snap-align: start; }
+
+.consol-red-tabs { flex-wrap: wrap; }
+
+/* Tablas anchas: nunca desbordan la página */
+.pg-table-scroll { max-width: 100%; }
+.consol-body, .consol-register-card, .consol-consulta-card { min-width: 0; }
+
+/* Zonas táctiles cómodas */
+@media (pointer: coarse) {
+  .consol-main-tab, .btn-clear-filtros, .pg-btn-excel, .pg-btn-danger { min-height: 40px; }
+  .form-group input, .form-group select, .form-group textarea, .filtro-cargo-select { font-size: 1rem; }
+}
+
+@media (max-width: 640px) {
+  .lobby { padding: 1.5rem 1rem 5rem; }
+  .lobby-title { font-size: 1.5rem; }
+  .lobby-header { align-items: stretch; }
+  .lobby-total { width: 100%; flex-direction: row; align-items: baseline; justify-content: space-between; text-align: left; padding: 0.75rem 1rem; }
+  .total-number { font-size: 2rem; }
+  .lobby-cards:not(.lobby-cards-modulos) { grid-template-columns: repeat(2, 1fr); gap: 0.65rem; }
+  .lobby-card { padding: 1rem 0.9rem 0.85rem; }
+  .lobby-card-count { font-size: 2.3rem; }
+  .lobby-card-name { margin-top: 0.65rem; padding-top: 0.65rem; font-size: 0.9rem; }
+  .lobby-card-modulo { min-height: 0; gap: 0.5rem; }
+  .lobby-cards-modulos { gap: 0.65rem; }
+
+  .consol-header { padding: 0.75rem 1rem; }
+  .consol-header-right { margin-left: auto; }
+  .consol-body { padding: 1rem; gap: 1rem; }
+  .consol-total-card { grid-column: 1 / -1; }
+  .consol-net-count-big { font-size: 1.5rem; }
+  .pastoral-kpi-row > .stats-kpi { flex: 1 1 calc(50% - 0.4rem); }
+  .consulta-filtros { gap: 0.5rem; }
+  .consulta-filtros > .form-group { flex: 1 1 100% !important; min-width: 0 !important; }
+  .pg-toolbar { flex-direction: column; align-items: stretch; }
+  .pg-btn-excel { width: 100%; }
+  .pg-table { font-size: 0.75rem; }
+  .pg-table th, .pg-table td { padding: 0.45rem 0.5rem; }
+  .masivo-inline { flex-wrap: wrap; }
+  .masivo-inline .btn-clear-filtros { align-self: stretch; }
+  .pg-danger { padding: 0.85rem; }
+  .pg-danger-box .form-group { max-width: none; }
+
+  /* Botón de tema: solo icono para no tapar contenido */
+  .theme-toggle { bottom: 0.75rem; right: 0.75rem; padding: 0.55rem 0.7rem; }
+  .theme-toggle-label { display: none; }
+}
+
+@media (max-width: 380px) {
+  .consol-title { font-size: 0.9rem; }
+  .btn-lobby, .btn-cerrar-sesion { padding: 0.4rem 0.6rem; font-size: 0.7rem; }
+}
+
+/* Tarjetas de resumen: número arriba, nombre debajo (antes quedaban en una línea) */
+.consol-net-stat { display: flex; flex-direction: column; justify-content: center; }
