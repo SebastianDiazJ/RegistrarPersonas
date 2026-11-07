@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
+import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
+import { getAuth, connectAuthEmulator } from 'firebase/auth';
 
 const firebaseConfig = {
   apiKey: "AIzaSyD4diFv51DDkCwJO8Z7jA_xhzsZLcMvAQA",
@@ -12,6 +12,15 @@ const firebaseConfig = {
   measurementId: "G-LDKJMSEE86"
 };
 
-const app = initializeApp(firebaseConfig);
+// Solo en desarrollo: `VITE_USE_EMULATOR=true npm run dev` apunta a los emuladores
+// locales de Auth y Firestore (proyecto demo-registro) para probar sin tocar datos reales.
+const useEmulator = import.meta.env.DEV && import.meta.env.VITE_USE_EMULATOR === 'true';
+
+const app = initializeApp(useEmulator ? { ...firebaseConfig, projectId: 'demo-registro' } : firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
+
+if (useEmulator) {
+  connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
+  connectFirestoreEmulator(db, '127.0.0.1', 8080);
+}

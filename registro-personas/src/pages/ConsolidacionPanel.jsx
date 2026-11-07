@@ -6,6 +6,9 @@ import { computeRedStats } from '../services/statsService';
 import { getAllRedesInfo } from '../services/redService';
 import { buildWhatsAppLink, buildNewPersonMessage } from '../services/whatsappService';
 import PersonasTable from '../components/PersonasTable';
+import BaseGeneralPanel from '../components/BaseGeneralPanel';
+import HistorialPanel from '../components/HistorialPanel';
+import { VistaGlobalTab } from '../components/VistaGlobal';
 import { METODOS_INVITACION, RESULTADOS_LLAMADA, MESES, diasPorMes } from '../config/opciones';
 import { onlyLetters, onlyDigits } from '../utils/validacion';
 
@@ -205,7 +208,12 @@ const ConsolidacionPanel = () => {
           {[
             { id: 'registrar',    label: 'Registrar persona' },
             { id: 'consultar',    label: 'Ver personas' },
-            { id: 'estadisticas', label: 'Estadísticas' }
+            { id: 'estadisticas', label: 'Estadísticas' },
+            { id: 'resumen',      label: 'Resumen general' },
+            { id: 'lideres',      label: 'Líderes y contacto' },
+            { id: 'comparativas', label: 'Estadísticas comparativas' },
+            { id: 'base',         label: 'Base general' },
+            { id: 'historial',    label: 'Historial de cambios' }
           ].map(t => (
             <button
               key={t.id}
@@ -565,6 +573,13 @@ const ConsolidacionPanel = () => {
             )}
           </div>
         )}
+
+        {/* ── Vista global (mismo contenido que el módulo Pastoral) ── */}
+        {['resumen', 'lideres', 'comparativas'].includes(activeTab) && <VistaGlobalTab key={activeTab} tab={activeTab} />}
+
+        {activeTab === 'base' && <BaseGeneralPanel />}
+
+        {activeTab === 'historial' && <HistorialPanel />}
       </div>
     </div>
   );

@@ -3205,3 +3205,48 @@ html { scroll-behavior: smooth; }
 .call-hist-obs { font-size: 0.72rem; color: var(--t2); padding-left: 0.4rem; }
 
 .patt-obs { font-size: 0.6rem; font-weight: 500; opacity: 0.9; max-width: 160px; white-space: normal; }
+
+/* ═══════════════════════════════════════════════════════════
+   INGRESO MASIVO · BASE GENERAL · HISTORIAL
+═══════════════════════════════════════════════════════════ */
+.masivo-aviso { font-size: 0.8rem; color: var(--t2); margin: 0.25rem 0 0.75rem; line-height: 1.5; }
+.masivo-inline { display: flex; gap: 0.5rem; align-items: center; }
+.masivo-inline input { flex: 1; min-width: 0; }
+.masivo-field-error { display: block; margin-top: 0.25rem; font-size: 0.72rem; font-weight: 700; color: var(--danger); }
+.masivo-field-ok { display: block; margin-top: 0.25rem; font-size: 0.72rem; font-weight: 700; color: var(--success); }
+.masivo-desplegable { border-left: 3px solid var(--admin); padding-left: 0.75rem; }
+.masivo-habeas { border: 1.5px solid var(--border); border-radius: 8px; padding: 0.75rem 0.9rem; background: var(--surface); }
+.masivo-habeas summary { cursor: pointer; font-size: 0.82rem; font-weight: 700; }
+.masivo-habeas p { margin: 0.5rem 0; font-size: 0.78rem; line-height: 1.55; color: var(--t2); }
+.masivo-check { display: flex; gap: 0.5rem; align-items: flex-start; font-size: 0.82rem; font-weight: 600; cursor: pointer; margin-top: 0.4rem; }
+.masivo-check input { width: auto; margin-top: 0.15rem; }
+
+.pg-wrap { display: flex; flex-direction: column; gap: 0.5rem; }
+.pg-orden-row { display: flex; gap: 0.4rem; }
+.pg-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.pg-btn-excel {
+  padding: 0.5rem 1rem; border: none; border-radius: 8px; background: var(--success); color: #fff;
+  font-size: 0.78rem; font-weight: 700; font-family: inherit; cursor: pointer; letter-spacing: .3px; text-transform: uppercase;
+}
+.pg-btn-excel:disabled { opacity: .5; cursor: not-allowed; }
+.pg-table-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--r); background: var(--surface); }
+.pg-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.pg-table th, .pg-table td { padding: 0.55rem 0.7rem; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+.pg-table th { font-size: 0.68rem; text-transform: uppercase; letter-spacing: .5px; color: var(--t2); white-space: nowrap; }
+.pg-table tbody tr:last-child td { border-bottom: none; }
+.pg-row-click { cursor: pointer; }
+.pg-row-click:hover { background: color-mix(in srgb, var(--admin) 6%, transparent); }
+.pg-chip { display: inline-block; font-size: 0.65rem; font-weight: 700; color: var(--t2); border: 1px solid var(--border); border-radius: 99px; padding: 0 0.45rem; }
+.pg-diff { margin: 0.4rem 0 0 1rem; font-size: 0.75rem; color: var(--t2); }
+
+.pg-danger { margin-top: 1.5rem; border: 1.5px solid var(--danger); border-radius: var(--r); padding: 1rem; }
+.pg-danger h3 { color: var(--danger); font-size: 0.95rem; margin-bottom: 0.35rem; }
+.pg-danger p { font-size: 0.8rem; color: var(--t2); margin-bottom: 0.6rem; line-height: 1.5; }
+.pg-danger-box { display: flex; flex-direction: column; gap: 0.6rem; align-items: flex-start; }
+.pg-danger-box .form-group { width: 100%; max-width: 320px; }
+.pg-danger-actions { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
+.pg-btn-danger {
+  padding: 0.55rem 1.1rem; border: none; border-radius: 8px; background: var(--danger); color: #fff;
+  font-size: 0.8rem; font-weight: 800; font-family: inherit; cursor: pointer; letter-spacing: .3px;
+}
+.pg-btn-danger:disabled { opacity: .4; cursor: not-allowed; }

@@ -9,6 +9,8 @@ import ConsolidacionLogin from './pages/ConsolidacionLogin';
 import ConsolidacionPanel from './pages/ConsolidacionPanel';
 import PastoralLogin from './pages/PastoralLogin';
 import PastoralPanel from './pages/PastoralPanel';
+import MasivoLogin from './pages/MasivoLogin';
+import MasivoPanel from './pages/MasivoPanel';
 import './App.css';
 
 /* ── Theme Toggle ─────────────────────────────────────── */
@@ -68,6 +70,14 @@ const PastoralProtectedRoute = () => {
   return <PastoralPanel />;
 };
 
+// Ingreso masivo: sin contraseña, pero exige haber dicho el nombre de quien diligencia.
+const MasivoProtectedRoute = () => {
+  const { isMasivoActive, loading } = useAuth();
+  if (loading) return <div className="loading">Cargando...</div>;
+  if (!isMasivoActive()) return <Navigate to="/masivo/login" replace />;
+  return <MasivoPanel />;
+};
+
 // /setup crea cuentas de Firebase Authentication con permisos elevados.
 // Solo admin o pastor pueden entrar una vez que ya existen esas cuentas.
 const SetupProtectedRoute = () => {
@@ -102,6 +112,9 @@ function AppRoutes() {
 
         <Route path="/pastoral/login" element={<PastoralLogin />} />
         <Route path="/pastoral" element={<PastoralProtectedRoute />} />
+
+        <Route path="/masivo/login" element={<MasivoLogin />} />
+        <Route path="/masivo" element={<MasivoProtectedRoute />} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

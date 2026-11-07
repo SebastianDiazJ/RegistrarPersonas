@@ -1,0 +1,226 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Identidad ────────────────────────────────────────────────────────
+    function conSesion() { return request.auth != null; }
+
+    // El "Ingreso masivo" (sin contraseña) entra con sesión ANÓNIMA de Firebase.
+    function esAnonimo() {
+      return conSesion() && request.auth.token.firebase.sign_in_provider == 'anonymous';
+    }
+    function emailAuth() {
+      return conSesion() ? request.auth.token.get('email', '') : '';
+    }
+    function esAdminOPastor() {
+      return emailAuth() in ['admin@iglesia.com', 'pastor@iglesia.com'];
+    }
+    function esLiderDe(redId) {
+      return emailAuth() == redId + '@redes.iglesia';
+    }
+    function esCuentaDeRed() { return emailAuth().matches('[a-z0-9]+@redes[.]iglesia'); }
+    function puedeIngresoMasivo() { return esAnonimo() || esAdminOPastor(); }
+
+    // ── Validadores ──────────────────────────────────────────────────────
+    function esRed(r) { return r in ['xtreme', 'parejas', '360', 'senior']; }
+    function texto(v, max) { return v is string && v.size() <= max && v.matches('[^<>]*'); }
+    function nombreOk(v) { return v is string && v.size() >= 1 && v.size() <= 60 && v.matches('[\\p{L} ]+'); }
+    function nombreOpc(v) { return v is string && v.size() <= 60 && v.matches('[\\p{L} ]*'); }
+    function digitos(v, min, max) {
+      return v is string && v.size() >= min && v.size() <= max && v.matches('[0-9]+');
+    }
+    function digitosOpc(v, min, max) { return v == '' || digitos(v, min, max); }
+    function emailOpc(v) {
+      return v is string && v.size() <= 100 &&
+        (v == '' || v.matches('[^@\\s<>]+@[^@\\s<>]+[.][^@\\s<>]{2,}'));
+    }
+    function fechaOk(v) { return v is string && v.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}'); }
+    function docPath(col, id) { return /databases/$(database)/documents/$(col)/$(id); }
+
+    // ── Base general de personas (id = cédula) ───────────────────────────
+    function clavesPersona() {
+      return ['cedula', 'nombre', 'apellido', 'telefono', 'email', 'mesCumple', 'diaCumple',
+        'estadoCivil', 'parejaCedula', 'asiste', 'redAsignada', 'aCargoDe', 'metodoInvitacion',
+        'fechaIngreso', 'prayerRequest', 'habeasData', 'habeasDataFecha', 'creadoPor',
+        'origen', 'creadoUid', 'creadoEn'];
+    }
+
+    // Cuota de altas por sesión anónima: cada alta debe sumar 1 al contador de la
+    // sesión, con tope. Admin/pastor no tienen tope.
+    function cuotaOk() {
+      let ref = docPath('cuotasMasivo', request.auth.uid);
+      return esAdminOPastor() || (
+        getAfter(ref).data.creados == (exists(ref) ? get(ref).data.creados : 0) + 1 &&
+        getAfter(ref).data.creados <= 300);
+    }
+
+    function personaGeneralValida(cedula) {
+      let d = request.resource.data;
+      return d.keys().hasOnly(clavesPersona()) && d.keys().hasAll(clavesPersona())
+        && digitos(cedula, 5, 12) && d.cedula == cedula
+        && nombreOk(d.nombre) && nombreOk(d.apellido)
+        && digitosOpc(d.telefono, 7, 15)
+        && emailOpc(d.email)
+        && d.mesCumple is string && d.mesCumple.matches('([1-9]|1[0-2])?')
+        && d.diaCumple is string && d.diaCumple.matches('([1-9]|[12][0-9]|3[01])?')
+        && d.estadoCivil in ['', 'soltero', 'casado', 'union_libre', 'viudo', 'separado']
+        && digitosOpc(d.parejaCedula, 5, 12) && d.parejaCedula != cedula
+        && (d.parejaCedula == '' ||
+            getAfter(docPath('personas', d.parejaCedula)).data.parejaCedula == cedula)
+        && d.asiste is bool
+        && ((d.asiste == false && d.redAsignada == '' && d.aCargoDe == '' && d.metodoInvitacion == '')
+            || (d.asiste == true && esRed(d.redAsignada)))
+        && nombreOpc(d.aCargoDe)
+        && d.metodoInvitacion in ['', 'Publicidad', 'Evangelismo', 'Familiar', 'Amigo', 'Redes sociales', 'Otro']
+        && fechaOk(d.fechaIngreso)
+        && texto(d.prayerRequest, 500)
+        && d.habeasData == true && texto(d.habeasDataFecha, 40)
+        && d.creadoPor is string && d.creadoPor.size() >= 2 && texto(d.creadoPor, 80)
+        && d.origen == 'ingreso_masivo'
+        && d.creadoUid == request.auth.uid
+        && d.creadoEn == request.time
+        && existsAfter(docPath('personasIndice', cedula));
+    }
+
+    // Unir pareja: solo se puede llenar parejaCedula (una vez) y la otra ficha debe
+    // quedar apuntando de vuelta en el mismo lote.
+    function uneParejaValida(cedula) {
+      let d = request.resource.data;
+      return d.diff(resource.data).affectedKeys().hasOnly(['parejaCedula', 'actualizadoEn'])
+        && resource.data.parejaCedula == ''
+        && digitos(d.parejaCedula, 5, 12) && d.parejaCedula != cedula
+        && getAfter(docPath('personas', d.parejaCedula)).data.parejaCedula == cedula
+        && d.actualizadoEn == request.time;
+    }
+
+    match /personas/{cedula} {
+      // Ingreso masivo NO puede leer ni listar la base: solo admin/pastor.
+      allow read: if esAdminOPastor();
+      allow create: if puedeIngresoMasivo() && personaGeneralValida(cedula) && cuotaOk();
+      allow update: if esAdminOPastor() || (esAnonimo() && uneParejaValida(cedula));
+      allow delete: if esAdminOPastor();
+    }
+
+    // Índice mínimo para "buscar por cédula exacta": nombre abreviado y si ya
+    // tiene pareja. Solo `get` (nunca `list`) para el ingreso masivo.
+    match /personasIndice/{cedula} {
+      allow get: if puedeIngresoMasivo();
+      allow list: if esAdminOPastor();
+      allow create: if puedeIngresoMasivo() && digitos(cedula, 5, 12)
+        && request.resource.data.keys().hasOnly(['nombreCorto', 'tienePareja', 'asiste'])
+        && request.resource.data.keys().hasAll(['nombreCorto', 'tienePareja', 'asiste'])
+        && request.resource.data.nombreCorto is string
+        && request.resource.data.nombreCorto.size() >= 3
+        && texto(request.resource.data.nombreCorto, 41)
+        && request.resource.data.tienePareja is bool
+        && request.resource.data.asiste is bool
+        && !exists(docPath('personas', cedula))
+        && getAfter(docPath('personas', cedula)).data.asiste == request.resource.data.asiste;
+      allow update: if esAdminOPastor() || (esAnonimo()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['tienePareja'])
+        && resource.data.tienePareja == false && request.resource.data.tienePareja == true
+        && getAfter(docPath('personas', cedula)).data.parejaCedula != '');
+      allow delete: if esAdminOPastor();
+    }
+
+    // Contador de altas por sesión anónima (ver cuotaOk).
+    match /cuotasMasivo/{uid} {
+      allow read: if esAdminOPastor() || (esAnonimo() && request.auth.uid == uid);
+      allow delete: if esAdminOPastor();
+      allow create, update: if esAnonimo() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['creados'])
+        && request.resource.data.creados is int
+        && request.resource.data.creados <= 300
+        && request.resource.data.creados == (resource == null ? 1 : resource.data.creados + 1);
+    }
+
+    // ── Historial de cambios: solo-append, lectura solo admin/pastor ─────
+    function clavesHistorial() {
+      return ['actor', 'actorTipo', 'accion', 'entidad', 'entidadId', 'red', 'resumen',
+        'antes', 'despues', 'cantidad', 'uid', 'ts'];
+    }
+    function historialBase() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(clavesHistorial()) && d.keys().hasAll(clavesHistorial())
+        && d.uid == request.auth.uid && d.ts == request.time
+        && d.accion is string && d.accion.matches('[a-z_]{3,40}')
+        && d.actor is string && d.actor.size() >= 2 && texto(d.actor, 80)
+        && texto(d.entidad, 30) && texto(d.entidadId, 60) && texto(d.red, 20) && texto(d.resumen, 300)
+        && d.antes is map && d.antes.size() <= 25
+        && d.despues is map && d.despues.size() <= 25
+        && d.cantidad is int && d.cantidad >= 0;
+    }
+    // El ingreso masivo solo puede dejar rastro de un alta o una unión de pareja
+    // que ocurre en ese mismo lote (no se puede inundar la bitácora con ruido).
+    function historialMasivo() {
+      let d = request.resource.data;
+      let p = docPath('personas', d.entidadId);
+      return d.actorTipo == 'masivo' && puedeIngresoMasivo()
+        && ((d.accion == 'crear_persona' && !exists(p) && existsAfter(p))
+            || (d.accion == 'vincular_pareja' && exists(p) && get(p).data.parejaCedula == ''
+                && getAfter(p).data.parejaCedula != ''));
+    }
+
+    match /historial/{id} {
+      allow read: if esAdminOPastor();
+      allow create: if conSesion() && historialBase() && (
+        historialMasivo() ||
+        (request.resource.data.actorTipo == 'admin' && emailAuth() == 'admin@iglesia.com'
+          && request.resource.data.actor == emailAuth()) ||
+        (request.resource.data.actorTipo == 'pastor' && emailAuth() == 'pastor@iglesia.com'
+          && request.resource.data.actor == emailAuth()) ||
+        (request.resource.data.actorTipo == 'red' && esCuentaDeRed()
+          && request.resource.data.actor == emailAuth()));
+      allow update, delete: if false;
+    }
+
+    // ── Redes ────────────────────────────────────────────────────────────
+    // Datos de cada red (nombre, líder, whatsapp). Lectura: cuentas con correo
+    // (red/admin/pastor), nunca sesiones anónimas.
+    match /redes/{redId} {
+      allow read: if conSesion() && !esAnonimo();
+      allow write: if esAdminOPastor();
+    }
+
+    function clavesPersonaRed() {
+      return ['cedula', 'nombre', 'apellido', 'telefono', 'email', 'aCargoDe', 'metodoInvitacion',
+        'fechaIngreso', 'prayerRequest', 'mesCumple', 'diaCumple', 'fechaNacimiento', 'edad',
+        'ausencias', 'llamadas', 'lastCallDate', 'lastCallResult', 'callConfirmed',
+        'origen', 'creadoPor', 'createdAt'];
+    }
+
+    // Alta de una persona en su red desde el ingreso masivo: debe coincidir con la
+    // ficha general creada en el mismo lote y venir "en blanco" (sin llamadas).
+    function personaRedMasivoValida(redId, personId) {
+      let d = request.resource.data;
+      let g = getAfter(docPath('personas', personId)).data;
+      return esRed(redId) && digitos(personId, 5, 12)
+        && d.keys().hasOnly(clavesPersonaRed()) && d.keys().hasAll(clavesPersonaRed())
+        && g.asiste == true && g.redAsignada == redId && g.creadoUid == request.auth.uid
+        && d.cedula == personId
+        && d.nombre == g.nombre && d.apellido == g.apellido
+        && d.telefono == g.telefono && d.email == g.email
+        && d.aCargoDe == g.aCargoDe && d.metodoInvitacion == g.metodoInvitacion
+        && d.fechaIngreso == g.fechaIngreso && d.prayerRequest == g.prayerRequest
+        && d.mesCumple == g.mesCumple && d.diaCumple == g.diaCumple
+        && d.fechaNacimiento is string && d.fechaNacimiento.size() <= 10
+        && d.edad == ''
+        && d.ausencias == 0 && d.llamadas == [] && d.lastCallDate == null
+        && d.lastCallResult == null && d.callConfirmed == false
+        && d.origen == 'ingreso_masivo' && d.creadoPor == g.creadoPor
+        && texto(d.createdAt, 40);
+    }
+
+    // Personas: solo la propia red (por su email), admin o pastor. El ingreso
+    // masivo solo puede CREAR (nunca leer, editar ni borrar).
+    match /redes/{redId}/personas/{personId} {
+      allow read, write: if esLiderDe(redId) || esAdminOPastor();
+      allow create: if esAnonimo() && personaRedMasivoValida(redId, personId);
+    }
+
+    // Config admin/pastor: ya no se usa (login vive en Firebase Auth), bloqueado
+    match /config/{doc} {
+      allow read, write: if false;
+    }
+  }
+}

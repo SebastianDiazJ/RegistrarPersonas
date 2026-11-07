@@ -1,5 +1,6 @@
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import { logCambio } from './historialService';
 
 export const getRedInfo = async (red) => {
   try {
@@ -20,7 +21,15 @@ export const getAllRedesInfo = async (redIds) => {
 
 export const updateRedLeaderInfo = async (red, { liderNombre, whatsapp }) => {
   try {
-    await setDoc(doc(db, 'redes', red), { liderNombre, whatsapp }, { merge: true });
+    const ref = doc(db, 'redes', red);
+    const prev = (await getDoc(ref)).data() || {};
+    await setDoc(ref, { liderNombre, whatsapp }, { merge: true });
+    await logCambio({
+      accion: 'editar_red', entidad: 'red', entidadId: red, red,
+      resumen: `Editó datos de contacto de la red ${red}`,
+      antes: { liderNombre: prev.liderNombre, whatsapp: prev.whatsapp },
+      despues: { liderNombre, whatsapp }
+    });
     return { success: true };
   } catch (error) {
     return { success: false, error: error.message };

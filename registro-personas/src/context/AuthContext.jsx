@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
+import { signInWithEmailAndPassword, signInAnonymously, signOut, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../config/firebase';
+import { sanitizeName } from '../utils/validacion';
+import { reiniciarLimitesMasivo } from '../services/masivoService';
 
 const RED_EMAIL   = (red) => `${red}@redes.iglesia`;
 const ADMIN_EMAIL  = 'admin@iglesia.com';
@@ -11,6 +13,8 @@ const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
   const [user, setUser]       = useState(null);
   const [loading, setLoading] = useState(true);
+  // Nombre de quien diligencia en "Ingreso masivo"; solo vive en memoria.
+  const [masivoNombre, setMasivoNombre] = useState('');
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
@@ -83,12 +87,41 @@ export const AuthProvider = ({ children }) => {
     await signOut(auth);
   };
 
+  // Ingreso masivo: sin contraseña. Pide el nombre de quien diligencia (queda en el
+  // historial con cada cambio) y usa una sesión anónima de Firebase, o la sesión
+  // de admin/pastor si ya hay una abierta.
+  const startMasivo = async (nombreRaw) => {
+    const nombre = sanitizeName(nombreRaw, 80);
+    if (nombre.length < 3) {
+      return { success: false, error: 'Escribe tu nombre completo (mínimo 3 letras).' };
+    }
+    try {
+      if (!auth.currentUser) await signInAnonymously(auth);
+      reiniciarLimitesMasivo();
+      setMasivoNombre(nombre);
+      return { success: true };
+    } catch (error) {
+      const msg = error.code === 'auth/operation-not-allowed' || error.code === 'auth/admin-restricted-operation'
+        ? 'El ingreso masivo no está habilitado (activa el proveedor "Anónimo" en Firebase Authentication).'
+        : 'Error de conexión. Intenta de nuevo.';
+      return { success: false, error: msg };
+    }
+  };
+
+  const isMasivoActive = () => Boolean(masivoNombre) && Boolean(auth.currentUser);
+
+  const logoutMasivo = async () => {
+    setMasivoNombre('');
+    if (auth.currentUser?.isAnonymous) await signOut(auth);
+  };
+
   return (
     <AuthContext.Provider value={{
       user, loading,
       isLoggedIn, login, logout,
       loginAdmin, isAdminLoggedIn, logoutAdmin,
-      loginPastor, isPastorLoggedIn, logoutPastor
+      loginPastor, isPastorLoggedIn, logoutPastor,
+      masivoNombre, startMasivo, isMasivoActive, logoutMasivo
     }}>
       {children}
     </AuthContext.Provider>

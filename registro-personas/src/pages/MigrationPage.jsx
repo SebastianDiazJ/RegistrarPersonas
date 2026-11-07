@@ -4,6 +4,7 @@ import {
   setupAuthUsers, initializeRedes, migrateXtremeData,
   checkMigrationNeeded
 } from '../services/migrationService';
+import reglasFirestore from '../../firestore.rules?raw';
 
 const REDES_SETUP = [
   { key: 'xtreme',  label: 'XTREME',  color: '#4338CA', email: 'xtreme@redes.iglesia' },
@@ -153,45 +154,13 @@ const MigrationPage = () => {
             Copia estas reglas y pégalas en{' '}
             <strong>Firebase Console → Firestore → Rules</strong>.
             Cada red solo puede leer/escribir sus propias personas; admin y
-            pastor tienen acceso a todo. Sin sesión, acceso cero.
+            pastor tienen acceso a todo. El Ingreso masivo (sesión anónima) solo
+            puede crear y buscar por cédula exacta. Sin sesión, acceso cero.
+            Activa también el proveedor <strong>Anónimo</strong> en
+            Authentication → Sign-in method. La fuente de estas reglas es
+            el archivo <code>firestore.rules</code>.
           </p>
-          <pre className="rules-code">{`rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-
-    function esAdminOPastor() {
-      return request.auth != null && (
-        request.auth.token.email == 'admin@iglesia.com' ||
-        request.auth.token.email == 'pastor@iglesia.com'
-      );
-    }
-
-    function esLiderDe(redId) {
-      return request.auth != null &&
-        request.auth.token.email == redId + '@redes.iglesia';
-    }
-
-    // Datos de cada red (nombre, lider, whatsapp) — ya no guarda claves,
-    // el login vive en Firebase Authentication.
-    // Lectura: cualquier usuario autenticado (la usa el formulario de registro).
-    // Escritura: solo admin y pastor, para que una red no edite el
-    // contacto de otra.
-    match /redes/{redId} {
-      allow read: if request.auth != null;
-      allow write: if esAdminOPastor();
-    }
-
-    // Personas: solo la propia red (por su email), admin o pastor.
-    match /redes/{redId}/personas/{personId} {
-      allow read, write: if esLiderDe(redId) || esAdminOPastor();
-    }
-
-    // Config admin/pastor: ya no se usa (login vive en Firebase Auth), bloqueado
-    match /config/{doc} {
-      allow read, write: if false;
-    }
-  }
-}`}</pre>
+          <pre className="rules-code">{reglasFirestore}</pre>
         </div>
 
         <div className="setup-divider" />
