@@ -56,7 +56,7 @@ jobs:
       - uses: actions/setup-node@v4
         if: steps.secretos.outputs.listo == 'true'
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: notificaciones/package-lock.json
       - run: npm ci
