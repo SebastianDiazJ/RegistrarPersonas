@@ -159,4 +159,14 @@ if (modo === 'cumples' || modo === 'todo') {
 }
 
 console.log('Resumen:', JSON.stringify(estado.resumen));
+// Resumen visible en la página de la ejecución (solo conteos, sin datos de personas).
+if (process.env.GITHUB_STEP_SUMMARY) {
+  const { appendFileSync } = await import('node:fs');
+  const filas = Object.entries(estado.resumen).map(([tipo, c]) => `| ${tipo} | ${c.enviado} | ${c.omitido} | ${c.error} |`);
+  const tabla = filas.length ? filas.join('\n') : '| (nada que enviar) | 0 | 0 | 0 |';
+  const titulo = `### Notificaciones (${modo}${correo.seco ? ', simulación' : ''})`;
+  const cabecera = '| Tipo | Enviados | Omitidos | Con error |\n|---|---|---|---|';
+  appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${titulo}\n\n${cabecera}\n${tabla}\n`);
+}
+
 process.exit(0);

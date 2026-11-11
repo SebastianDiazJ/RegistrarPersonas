@@ -31,14 +31,38 @@ jobs:
       run:
         working-directory: notificaciones
     steps:
+      # Mientras no estén creados los secretos, las ejecuciones programadas se saltan en
+      # silencio (en vez de fallar cada 10 minutos). Una ejecución manual sí avisa con error.
+      - name: Revisar secretos
+        id: secretos
+        working-directory: .
+        env:
+          CUENTA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          GMAIL: ${{ secrets.GMAIL_USER }}
+          CLAVE: ${{ secrets.GMAIL_APP_PASSWORD }}
+          SIMULACION: ${{ github.event.inputs.simulacion }}
+          EVENTO: ${{ github.event_name }}
+        run: |
+          if [ -n "$CUENTA" ] && { [ "$SIMULACION" = "true" ] || { [ -n "$GMAIL" ] && [ -n "$CLAVE" ]; }; }; then
+            echo "listo=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "listo=false" >> "$GITHUB_OUTPUT"
+            echo "Faltan secretos (FIREBASE_SERVICE_ACCOUNT, GMAIL_USER, GMAIL_APP_PASSWORD). Ver notificaciones/README.md." >> "$GITHUB_STEP_SUMMARY"
+            if [ "$EVENTO" = "workflow_dispatch" ]; then echo "::error::Faltan secretos de GitHub"; exit 1; fi
+            echo "::warning::Faltan secretos de GitHub: se omite el envío."
+          fi
       - uses: actions/checkout@v4
+        if: steps.secretos.outputs.listo == 'true'
       - uses: actions/setup-node@v4
+        if: steps.secretos.outputs.listo == 'true'
         with:
           node-version: 20
           cache: npm
           cache-dependency-path: notificaciones/package-lock.json
       - run: npm ci
+        if: steps.secretos.outputs.listo == 'true'
       - name: Enviar
+        if: steps.secretos.outputs.listo == 'true'
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
