@@ -1,0 +1,14 @@
+# Avisa y abre PRs cuando hay actualizaciones de seguridad en las dependencias.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /registro-personas
+    schedule: { interval: weekly }
+    open-pull-requests-limit: 5
+  - package-ecosystem: npm
+    directory: /notificaciones
+    schedule: { interval: weekly }
+    open-pull-requests-limit: 5
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: monthly }

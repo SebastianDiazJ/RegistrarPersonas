@@ -1,1 +1,18 @@
 .claude/
+
+# Dependencias y compilados
+node_modules/
+dist/
+
+# Secretos: nunca se suben (usa variables de entorno / secretos de GitHub y Vercel)
+.env
+.env.*
+!.env.example
+*.local
+*serviceAccount*.json
+*-firebase-adminsdk-*.json
+*.pem
+*.key
+
+# Registros
+*.log

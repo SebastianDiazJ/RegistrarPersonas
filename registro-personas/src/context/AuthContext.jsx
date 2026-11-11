@@ -10,6 +10,9 @@ const PASTOR_EMAIL = 'pastor@iglesia.com';
 
 const AuthContext = createContext(null);
 
+// Firebase Auth ya limita los intentos fallidos por su cuenta; aquí se explica al usuario.
+const MSG_DEMASIADOS = 'Demasiados intentos fallidos. Espera unos minutos e inténtalo de nuevo.';
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser]       = useState(null);
   const [loading, setLoading] = useState(true);
@@ -32,7 +35,9 @@ export const AuthProvider = ({ children }) => {
       return { success: true };
     } catch (error) {
       const msg =
-        error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password'
+        error.code === 'auth/too-many-requests'
+          ? MSG_DEMASIADOS
+          : error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password'
           ? 'Contraseña incorrecta'
           : error.code === 'auth/user-not-found'
           ? 'Usuario no encontrado. Ve a /setup para configurar.'
@@ -55,7 +60,9 @@ export const AuthProvider = ({ children }) => {
       return { success: true };
     } catch (error) {
       const msg =
-        error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password'
+        error.code === 'auth/too-many-requests'
+          ? MSG_DEMASIADOS
+          : error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password'
           ? 'Correo o contraseña incorrectos'
           : 'Error de conexión. Intenta de nuevo.';
       return { success: false, error: msg };
@@ -77,7 +84,7 @@ export const AuthProvider = ({ children }) => {
       }
       return { success: true };
     } catch (error) {
-      return { success: false, error: 'Correo o contraseña incorrectos' };
+      return { success: false, error: error.code === 'auth/too-many-requests' ? MSG_DEMASIADOS : 'Correo o contraseña incorrectos' };
     }
   };
 

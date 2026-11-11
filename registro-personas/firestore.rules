@@ -251,7 +251,9 @@ service cloud.firestore {
     // Personas: solo la propia red (por su email), admin o pastor. El ingreso
     // masivo solo puede CREAR (nunca leer, editar ni borrar).
     match /redes/{redId}/personas/{personId} {
-      allow read, write: if esLiderDe(redId) || esAdminOPastor();
+      allow read, delete: if esLiderDe(redId) || esAdminOPastor();
+      // Tope de campos por ficha: evita documentos inflados desde una cuenta comprometida.
+      allow create, update: if (esLiderDe(redId) || esAdminOPastor()) && request.resource.data.size() <= 40;
       allow create: if esAnonimo() && personaRedMasivoValida(redId, personId);
     }
 
