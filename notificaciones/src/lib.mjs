@@ -44,7 +44,16 @@ export const iniciarFirestore = () => {
   } else {
     const cred = process.env.FIREBASE_SERVICE_ACCOUNT;
     if (!cred) throw new Error('Falta el secreto FIREBASE_SERVICE_ACCOUNT');
-    initializeApp({ credential: cert(JSON.parse(cred)) });
+    let cuenta;
+    try {
+      cuenta = JSON.parse(cred);
+    } catch {
+      // No se muestra el detalle del error: podría incluir el inicio del secreto.
+      throw new Error('El secreto FIREBASE_SERVICE_ACCOUNT no es un JSON válido: pega el archivo .json completo, de { a }, sin comillas extra');
+    }
+    const faltan = ['project_id', 'client_email', 'private_key'].filter((k) => !cuenta?.[k]);
+    if (faltan.length) throw new Error(`El JSON de FIREBASE_SERVICE_ACCOUNT no parece una clave de cuenta de servicio (falta: ${faltan.join(', ')})`);
+    initializeApp({ credential: cert(cuenta) });
   }
   return getFirestore();
 };
