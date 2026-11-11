@@ -95,7 +95,8 @@ export const enviarUnico = async ({ db, correo, clave, tipo, para, nombre = '', 
   const previo = await ref.get();
   if (previo.exists) {
     const d = previo.data();
-    if (d.estado !== 'error' || (d.intentos || 0) >= 3) return 'omitido';
+    // Un envío "simulado" (prueba) no cuenta como enviado: el envío real debe poder hacerse después.
+    if (d.estado !== 'simulado' && (d.estado !== 'error' || (d.intentos || 0) >= 3)) return 'omitido';
   }
   const intentos = (previo.data()?.intentos || 0) + 1;
   await ref.set({ tipo, destinatario: para, nombre: limpiarLinea(nombre, 80), asunto: limpiarLinea(asunto), estado: 'enviando', intentos, ts: FieldValue.serverTimestamp(), ...extra });

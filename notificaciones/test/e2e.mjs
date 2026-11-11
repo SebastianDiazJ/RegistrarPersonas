@@ -72,6 +72,11 @@ const despues = (await db.collection('envios').get()).size;
 assert.equal(despues, antes, 'la segunda ejecución no crea envíos nuevos');
 assert.match(salida2, /"omitido"|Resumen: \{/);
 
+// Un envío simulado no bloquea el envío real: la fila "simulado" se puede reenviar.
+const simulados = (await db.collection('envios').get()).docs.filter((d) => d.data().estado === 'simulado').length;
+assert.equal(simulados, antes, 'todo lo simulado queda marcado como simulado');
+assert.match(salida2, /"enviado":\d+/, 'una segunda simulación vuelve a "enviar" lo simulado');
+
 console.log(`OK: ${antes} envíos simulados, sin repeticiones.`);
 await deleteApp(getApp());
 process.exit(0);
