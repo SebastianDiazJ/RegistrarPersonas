@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { REDES, REDES_MAP } from '../config/redes';
 import {
-  pct, computePorLlamar, computeResponsablesPendientes, computeNuevosPorMes, computeAsistenciaSemanal
+  pct, computePorLlamar, computeResponsablesPendientes, computeNuevosPorMes, computeAsistenciaSemanal, computeIncompletos
 } from '../services/insightsService';
 
 // Paneles de seguimiento: cuántas personas hay por llamar, quién las tiene, cómo van las
@@ -293,3 +293,39 @@ export const EmbudoPorRed = ({ insightsByRed }) => (
     })}
   </div>
 );
+
+/* ── Registros con datos incompletos ────────────────────────────────────── */
+export const IncompletosPanel = ({ rawPersonas }) => {
+  const [ver, setVer] = useState(false);
+  const lista = useMemo(() => computeIncompletos(rawPersonas, REDES), [rawPersonas]);
+  if (lista.length === 0) return null;
+  const visibles = ver ? lista : lista.slice(0, 8);
+
+  return (
+    <div className="seg-panel">
+      <h3 className="seg-panel-title">Registros con datos incompletos ({lista.length})</h3>
+      <p className="seg-panel-sub">
+        Personas a las que les falta algún dato obligatorio. Complétalas o elimínalas desde «Ver personas» (o «Personas por red» en Pastoral).
+      </p>
+      <div className="pg-table-scroll">
+        <table className="pg-table">
+          <thead><tr><th>Persona</th><th>Red</th><th>Falta</th></tr></thead>
+          <tbody>
+            {visibles.map(x => (
+              <tr key={x.id}>
+                <td>{x.nombre}</td>
+                <td><span className="seg-dot" style={{ background: REDES_MAP[x.red].color }} />{REDES_MAP[x.red].nombre}</td>
+                <td className="seg-muted">{x.faltan.join(', ')}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {lista.length > 8 && (
+        <button type="button" className="btn-clear-filtros" onClick={() => setVer(v => !v)}>
+          {ver ? 'Ver menos' : `Ver las ${lista.length} personas`}
+        </button>
+      )}
+    </div>
+  );
+};

@@ -59,7 +59,7 @@ service cloud.firestore {
       return d.keys().hasOnly(clavesPersona()) && d.keys().hasAll(clavesPersona())
         && digitos(cedula, 5, 12) && d.cedula == cedula
         && nombreOk(d.nombre) && nombreOk(d.apellido)
-        && digitosOpc(d.telefono, 7, 15)
+        && digitos(d.telefono, 7, 15)
         && emailOpc(d.email)
         && d.mesCumple is string && d.mesCumple.matches('([1-9]|1[0-2])?')
         && d.diaCumple is string && d.diaCumple.matches('([1-9]|[12][0-9]|3[01])?')
@@ -69,7 +69,7 @@ service cloud.firestore {
             getAfter(docPath('personas', d.parejaCedula)).data.parejaCedula == cedula)
         && d.asiste is bool
         && ((d.asiste == false && d.redAsignada == '' && d.aCargoDe == '' && d.metodoInvitacion == '')
-            || (d.asiste == true && esRed(d.redAsignada)))
+            || (d.asiste == true && esRed(d.redAsignada) && nombreOk(d.aCargoDe)))
         && nombreOpc(d.aCargoDe)
         && d.metodoInvitacion in ['', 'Publicidad', 'Evangelismo', 'Familiar', 'Amigo', 'Redes sociales', 'Otro']
         && fechaOk(d.fechaIngreso)
@@ -248,12 +248,26 @@ service cloud.firestore {
         && texto(d.createdAt, 40);
     }
 
+    // Datos obligatorios de una ficha nueva en una red (mismo criterio que los formularios).
+    function personaRedCompleta(d) {
+      return nombreOk(d.get('nombre', '')) && nombreOk(d.get('apellido', ''))
+        && digitos(d.get('telefono', ''), 7, 15)
+        && nombreOk(d.get('aCargoDe', ''))
+        && fechaOk(d.get('fechaIngreso', ''))
+        && d.get('metodoInvitacion', '') in ['Publicidad', 'Evangelismo', 'Familiar', 'Amigo', 'Redes sociales', 'Otro']
+        && d.get('mesCumple', '') is string && d.get('mesCumple', '').matches('[1-9]|1[0-2]')
+        && d.get('diaCumple', '') is string && d.get('diaCumple', '').matches('[1-9]|[12][0-9]|3[01]');
+    }
+
     // Personas: solo la propia red (por su email), admin o pastor. El ingreso
     // masivo solo puede CREAR (nunca leer, editar ni borrar).
     match /redes/{redId}/personas/{personId} {
       allow read, delete: if esLiderDe(redId) || esAdminOPastor();
       // Tope de campos por ficha: evita documentos inflados desde una cuenta comprometida.
-      allow create, update: if (esLiderDe(redId) || esAdminOPastor()) && request.resource.data.size() <= 40;
+      allow update: if (esLiderDe(redId) || esAdminOPastor()) && request.resource.data.size() <= 40;
+      // Al crear, la ficha debe traer los datos obligatorios (nada de registros vacíos).
+      allow create: if (esLiderDe(redId) || esAdminOPastor()) && request.resource.data.size() <= 40
+        && personaRedCompleta(request.resource.data);
       allow create: if esAnonimo() && personaRedMasivoValida(redId, personId);
     }
 

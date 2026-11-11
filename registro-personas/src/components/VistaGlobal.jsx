@@ -5,7 +5,7 @@ import { getAllRedesInfo, updateRedLeaderInfo } from '../services/redService';
 import { computeRedStats, computeLeaderBreakdown } from '../services/statsService';
 import { getCallAlertSummary } from '../services/callAlertService';
 import { computeInsights, sumInsights } from '../services/insightsService';
-import { SeguimientoKpis, TarjetasRed, PorLlamarPanel, ResponsablesPanel, TendenciasPanel, EmbudoPorRed } from './SeguimientoStats';
+import { SeguimientoKpis, TarjetasRed, PorLlamarPanel, ResponsablesPanel, TendenciasPanel, EmbudoPorRed, IncompletosPanel } from './SeguimientoStats';
 import { sanitizeEmail, sanitizeName, isValidEmail, onlyDigits } from '../utils/validacion';
 
 // Vista global de todas las redes (resumen, líderes y contacto, estadísticas
@@ -107,6 +107,7 @@ export const ResumenTab = ({ redesInfo, insightsByRed, rawPersonas }) => (
     <TarjetasRed insightsByRed={insightsByRed} redesInfo={redesInfo} />
     <PorLlamarPanel rawPersonas={rawPersonas} />
     <ResponsablesPanel rawPersonas={rawPersonas} />
+    <IncompletosPanel rawPersonas={rawPersonas} />
   </>
 );
 

@@ -11,7 +11,7 @@ import { REDES } from '../config/redes';
 import { METODOS_INVITACION, ESTADOS_CIVILES } from '../config/opciones';
 import {
   sanitizeText, sanitizeName, sanitizeEmail, onlyDigits,
-  isValidCedula, isValidTelefono, isValidEmail, isValidFecha
+  isValidCedula, isValidEmail, isValidFecha
 } from '../utils/validacion';
 
 // ── Límites de uso del modo sin contraseña ────────────────────────────────
@@ -81,7 +81,7 @@ export const validarFormulario = (form) => {
   if (!isValidCedula(clean.cedula)) errors.cedula = 'Cédula de 5 a 12 dígitos.';
   if (!clean.nombre) errors.nombre = 'Escribe el nombre.';
   if (!clean.apellido) errors.apellido = 'Escribe el apellido.';
-  if (!isValidTelefono(clean.telefono)) errors.telefono = 'Teléfono de 7 a 15 dígitos.';
+  if (!/^\d{7,15}$/.test(clean.telefono)) errors.telefono = 'Teléfono de 7 a 15 dígitos.';
   if (!isValidEmail(clean.email)) errors.email = 'Correo no válido.';
   if ((clean.mesCumple && !clean.diaCumple) || (!clean.mesCumple && clean.diaCumple)) {
     errors.cumple = 'Completa mes y día del cumpleaños.';
@@ -93,6 +93,7 @@ export const validarFormulario = (form) => {
   }
   if (clean.asiste) {
     if (!REDES.some(r => r.id === clean.redAsignada)) errors.redAsignada = 'Elige la red.';
+    if (!clean.aCargoDe) errors.aCargoDe = 'Escribe quién queda a cargo.';
     if (clean.metodoInvitacion && !METODOS_INVITACION.includes(clean.metodoInvitacion)) errors.metodoInvitacion = 'Método no válido.';
   }
   if (!isValidFecha(clean.fechaIngreso)) errors.fechaIngreso = 'Fecha de ingreso no válida.';

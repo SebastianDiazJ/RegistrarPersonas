@@ -147,7 +147,7 @@ const MasivoPanel = () => {
             <form onSubmit={handleSubmit} noValidate className="consol-form" style={{ '--c1': '#1B2D45' }}>
               <div className="consol-fields-grid">
                 <div className="form-group">
-                  <label>Cédula</label>
+                  <label>Cédula <span className="req">*</span></label>
                   <div className="masivo-inline">
                     <input value={form.cedula} onChange={e => { setForm(f => ({ ...f, cedula: onlyDigits(e.target.value).slice(0, 12) })); setCedulaInfo(null); }} placeholder="Número de cédula" inputMode="numeric" autoComplete="off" />
                     <button type="button" className="btn-clear-filtros" onClick={verificarCedula} disabled={cedulaInfo?.loading}>Verificar</button>
@@ -156,22 +156,22 @@ const MasivoPanel = () => {
                   <FieldError msg={errors.cedula} />
                 </div>
                 <div className="form-group">
-                  <label>Fecha de ingreso</label>
+                  <label>Fecha de ingreso <span className="req">*</span></label>
                   <input type="date" value={form.fechaIngreso} onChange={set('fechaIngreso')} />
                   <FieldError msg={errors.fechaIngreso} />
                 </div>
                 <div className="form-group">
-                  <label>Nombre</label>
+                  <label>Nombre <span className="req">*</span></label>
                   <input value={form.nombre} onChange={setFiltered('nombre', v => onlyLetters(v).slice(0, 60))} placeholder="Nombre" autoComplete="off" />
                   <FieldError msg={errors.nombre} />
                 </div>
                 <div className="form-group">
-                  <label>Apellido</label>
+                  <label>Apellido <span className="req">*</span></label>
                   <input value={form.apellido} onChange={setFiltered('apellido', v => onlyLetters(v).slice(0, 60))} placeholder="Apellido" autoComplete="off" />
                   <FieldError msg={errors.apellido} />
                 </div>
                 <div className="form-group">
-                  <label>Teléfono</label>
+                  <label>Teléfono <span className="req">*</span></label>
                   <input value={form.telefono} onChange={setFiltered('telefono', v => onlyDigits(v).slice(0, 15))} placeholder="3001234567" type="tel" inputMode="numeric" autoComplete="off" />
                   <FieldError msg={errors.telefono} />
                 </div>
@@ -228,7 +228,7 @@ const MasivoPanel = () => {
                 {form.asiste === 'si' && (
                   <>
                     <div className="form-group masivo-desplegable">
-                      <label>Red a la que se asigna</label>
+                      <label>Red a la que se asigna <span className="req">*</span></label>
                       <select value={form.redAsignada} onChange={set('redAsignada')}>
                         <option value="">Seleccionar...</option>
                         {REDES.map(r => <option key={r.id} value={r.id}>{r.nombre}</option>)}
@@ -236,8 +236,9 @@ const MasivoPanel = () => {
                       <FieldError msg={errors.redAsignada} />
                     </div>
                     <div className="form-group masivo-desplegable">
-                      <label>A cargo de</label>
+                      <label>A cargo de <span className="req">*</span></label>
                       <input value={form.aCargoDe} onChange={setFiltered('aCargoDe', v => onlyLetters(v).slice(0, 60))} placeholder="Líder responsable" autoComplete="off" />
+                      <FieldError msg={errors.aCargoDe} />
                     </div>
                     <div className="form-group masivo-desplegable">
                       <label>Método de invitación</label>

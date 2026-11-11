@@ -167,3 +167,28 @@ export const computeAsistenciaSemanal = (rawPersonas, redes, semanas = 8, ahora 
   });
   return out;
 };
+
+// Personas con datos obligatorios vacíos (registros hechos antes de exigirlos o desde versiones viejas).
+export const computeIncompletos = (rawPersonas, redes) => {
+  const lista = [];
+  redes.forEach(red => {
+    (rawPersonas[red.id] || []).forEach(p => {
+      const faltan = [];
+      if (!String(p.nombre || '').trim()) faltan.push('nombre');
+      if (!String(p.apellido || '').trim()) faltan.push('apellido');
+      if (!/^\d{7,15}$/.test(String(p.telefono || ''))) faltan.push('teléfono');
+      if (!String(p.aCargoDe || '').trim()) faltan.push('a cargo de');
+      if (!p.metodoInvitacion) faltan.push('método de invitación');
+      if (!p.mesCumple || !p.diaCumple) faltan.push('cumpleaños');
+      if (!p.fechaIngreso) faltan.push('fecha de ingreso');
+      if (faltan.length) {
+        lista.push({
+          id: `${red.id}-${p.id}`, red: red.id,
+          nombre: `${p.nombre || ''} ${p.apellido || ''}`.trim() || '(sin nombre)',
+          faltan
+        });
+      }
+    });
+  });
+  return lista.sort((a, b) => b.faltan.length - a.faltan.length);
+};
