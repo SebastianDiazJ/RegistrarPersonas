@@ -3472,3 +3472,6 @@ html { scroll-behavior: smooth; }
   .seg-two { grid-template-columns: 1fr; }
   .seg-chart { height: 140px; }
 }
+
+/* Campo obligatorio */
+.req { color: var(--danger); font-weight: 800; }

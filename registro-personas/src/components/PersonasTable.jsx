@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { deletePerson, updatePerson } from '../services/personService';
 import { getCallAlertStatus } from '../services/callAlertService';
 import { normalizeMetodo } from '../config/opciones';
-import { onlyLetters, onlyDigits } from '../utils/validacion';
+import { onlyLetters, onlyDigits, sanitizeName, isValidEmail, sanitizeEmail } from '../utils/validacion';
 
 const initials = (p) =>
   (((p.nombre || '')[0] || '') + ((p.apellido || '')[0] || '')).toUpperCase() || '?';
@@ -21,6 +21,7 @@ const RESULT_CONFIG = {
 const PersonasTable = ({ personas, red, redConfig, busqueda, onRefresh, filtroServicio, filtroFecha }) => {
   const [editingId, setEditingId]   = useState(null);
   const [editForm, setEditForm]     = useState(null);
+  const [editError, setEditError]   = useState('');
   const [expandedId, setExpandedId] = useState(null);
   const [sortBy, setSortBy]         = useState('nombre');
   const [sortDir, setSortDir]       = useState('asc');
@@ -78,10 +79,23 @@ const PersonasTable = ({ personas, red, redConfig, busqueda, onRefresh, filtroSe
     return <span className="sort-icon sort-active">{sortDir === 'asc' ? '↑' : '↓'}</span>;
   };
 
-  const handleEdit = (p) => { setEditingId(p.id); setEditForm({ ...p }); };
+  const handleEdit = (p) => { setEditError(''); setEditingId(p.id); setEditForm({ ...p }); };
 
   const handleSave = async () => {
     if (editingId && editForm) {
+      if (!sanitizeName(editForm.nombre) || !sanitizeName(editForm.apellido)) {
+        setEditError('El nombre y el apellido son obligatorios.');
+        return;
+      }
+      if (editForm.telefono && !/^\d{7,15}$/.test(editForm.telefono)) {
+        setEditError('El teléfono debe tener entre 7 y 15 dígitos.');
+        return;
+      }
+      if (editForm.email && !isValidEmail(sanitizeEmail(editForm.email))) {
+        setEditError('El correo no es válido.');
+        return;
+      }
+      setEditError('');
       const res = await updatePerson(red, editingId, editForm);
       if (res.success) { setEditingId(null); setEditForm(null); onRefresh(); }
     }
@@ -107,6 +121,7 @@ const PersonasTable = ({ personas, red, redConfig, busqueda, onRefresh, filtroSe
   return (
     <div className="plist-wrap">
       {/* Meta */}
+      {editError && <div className="login-error" style={{ marginBottom: '0.5rem' }}>{editError}</div>}
       <p className="plist-meta">
         <strong>{personasFiltradas.length}</strong> de <strong>{personas.length}</strong> personas
       </p>
@@ -239,7 +254,7 @@ const PersonasTable = ({ personas, red, redConfig, busqueda, onRefresh, filtroSe
                   {isEditing ? (
                     <>
                       <button className="pact-btn pact-save" onClick={handleSave}>Guardar</button>
-                      <button className="pact-btn pact-cancel" onClick={() => setEditingId(null)}>Cancelar</button>
+                      <button className="pact-btn pact-cancel" onClick={() => { setEditingId(null); setEditError(''); }}>Cancelar</button>
                     </>
                   ) : (
                     <>

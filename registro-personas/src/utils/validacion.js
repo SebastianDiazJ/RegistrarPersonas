@@ -34,3 +34,20 @@ export const isValidCedula = (v) => /^\d{5,12}$/.test(v || '');
 export const isValidTelefono = (v) => !v || /^\d{7,15}$/.test(v);
 export const isValidEmail = (v) => !v || /^[^@\s<>]+@[^@\s<>]+\.[^@\s<>]{2,}$/.test(v);
 export const isValidFecha = (v) => /^\d{4}-\d{2}-\d{2}$/.test(v || '') && !Number.isNaN(Date.parse(v));
+
+// Campos obligatorios al registrar una persona en una red (Consolidación y formulario de red).
+// Opcionales: correo, edad, petición de oración y los datos de la llamada inicial.
+export const validarPersonaRed = (f) => {
+  const errors = {};
+  if (!sanitizeName(f.nombre)) errors.nombre = 'Escribe el nombre.';
+  if (!sanitizeName(f.apellido)) errors.apellido = 'Escribe el apellido.';
+  if (!/^\d{7,15}$/.test(onlyDigits(f.telefono))) errors.telefono = 'Teléfono de 7 a 15 dígitos.';
+  const email = sanitizeEmail(f.email);
+  if (email && !isValidEmail(email)) errors.email = 'El correo no es válido.';
+  if (f.edad !== undefined && f.edad !== '' && !(Number(f.edad) >= 1 && Number(f.edad) <= 120)) errors.edad = 'Edad entre 1 y 120.';
+  if (!isValidFecha(f.fechaIngreso)) errors.fechaIngreso = 'Elige la fecha de ingreso.';
+  if (!f.metodoInvitacion) errors.metodoInvitacion = 'Elige cómo llegó.';
+  if (!sanitizeName(f.aCargoDe)) errors.aCargoDe = 'Elige el líder a cargo.';
+  if (!f.mesCumple || !f.diaCumple) errors.cumple = 'Elige mes y día del cumpleaños.';
+  return errors;
+};

@@ -3,7 +3,8 @@ import { addPerson, updatePerson, buildCallRecord } from '../services/personServ
 import { getRedInfo } from '../services/redService';
 import { buildWhatsAppLink, buildNewPersonMessage } from '../services/whatsappService';
 import { METODOS_INVITACION, RESULTADOS_LLAMADA, MESES, diasPorMes, normalizeMetodo } from '../config/opciones';
-import { onlyLetters, onlyDigits } from '../utils/validacion';
+import { onlyLetters, onlyDigits, validarPersonaRed } from '../utils/validacion';
+import LiderSelect, { useResponsablesRed } from './LiderSelect';
 
 const todayISO = () => new Date().toISOString().split('T')[0];
 
@@ -27,6 +28,8 @@ const RegisterForm = ({ red, selectedPerson, onFinish }) => {
   const [form, setForm] = useState(EMPTY_FORM);
   const [redInfo, setRedInfo] = useState(null);
   const [lastAdded, setLastAdded] = useState(null);
+  const [errors, setErrors] = useState({});
+  const responsables = useResponsablesRed(red);
 
   useEffect(() => {
     getRedInfo(red).then(res => { if (res.success) setRedInfo(res.data); });
@@ -70,6 +73,9 @@ const RegisterForm = ({ red, selectedPerson, onFinish }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const faltantes = validarPersonaRed(form);
+    setErrors(faltantes);
+    if (Object.keys(faltantes).length > 0) return;
     const { mesCumple, diaCumple, contesto, observacion, ...rest } = form;
 
     const personData = {
@@ -96,12 +102,15 @@ const RegisterForm = ({ red, selectedPerson, onFinish }) => {
       setLastAdded({ nombre: form.nombre, apellido: form.apellido, telefono: form.telefono });
     }
     onFinish();
+    setErrors({});
     setForm(EMPTY_FORM());
   };
 
   const diasDisponibles = form.mesCumple ? diasPorMes(parseInt(form.mesCumple)) : 31;
-  const set = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }));
-  const setFiltered = (field, filter) => (e) => setForm(f => ({ ...f, [field]: filter(e.target.value) }));
+  const quitarError = (field) => setErrors(er => ({ ...er, [field]: undefined }));
+  const set = (field) => (e) => { quitarError(field); setForm(f => ({ ...f, [field]: e.target.value })); };
+  const setFiltered = (field, filter) => (e) => { quitarError(field); setForm(f => ({ ...f, [field]: filter(e.target.value) })); };
+  const err = (k) => (errors[k] ? <span className="masivo-field-error">{errors[k]}</span> : null);
 
   return (
     <div className="register-form">
@@ -127,62 +136,77 @@ const RegisterForm = ({ red, selectedPerson, onFinish }) => {
 
       <form onSubmit={handleSubmit} noValidate>
         <div className="form-group">
-          <label>Nombre</label>
+          <label>Nombre <span className="req">*</span></label>
           <input value={form.nombre} onChange={setFiltered('nombre', onlyLetters)} placeholder="Nombre" autoComplete="off" />
+          {err('nombre')}
         </div>
 
         <div className="form-group">
-          <label>Apellido</label>
+          <label>Apellido <span className="req">*</span></label>
           <input value={form.apellido} onChange={setFiltered('apellido', onlyLetters)} placeholder="Apellido" autoComplete="off" />
+          {err('apellido')}
         </div>
 
         <div className="form-group">
-          <label>Teléfono</label>
-          <input value={form.telefono} onChange={setFiltered('telefono', onlyDigits)} placeholder="3001234567" type="tel" inputMode="numeric" />
+          <label>Teléfono <span className="req">*</span></label>
+          <input value={form.telefono} onChange={setFiltered('telefono', v => onlyDigits(v).slice(0, 15))} placeholder="3001234567" type="tel" inputMode="numeric" />
+          {err('telefono')}
         </div>
 
         <div className="form-group">
           <label>Correo electrónico</label>
           <input type="email" value={form.email} onChange={set('email')} placeholder="correo@ejemplo.com" />
+          {err('email')}
+          <span className="masivo-aviso" style={{ margin: 0 }}>Opcional. Con correo recibe bienvenida y felicitación de cumpleaños.</span>
         </div>
 
         <div className="form-group">
           <label>Edad</label>
           <input value={form.edad} onChange={setFiltered('edad', v => onlyDigits(v).slice(0, 3))} placeholder="25" inputMode="numeric" />
+          {err('edad')}
         </div>
 
         <div className="form-group">
-          <label>Cumpleaños</label>
+          <label>Cumpleaños <span className="req">*</span></label>
           <div className="cumple-row">
-            <select value={form.mesCumple} onChange={e => setForm(f => ({ ...f, mesCumple: e.target.value, diaCumple: '' }))}>
+            <select value={form.mesCumple} onChange={e => { quitarError('cumple'); setForm(f => ({ ...f, mesCumple: e.target.value, diaCumple: '' })); }}>
               <option value="">Mes</option>
               {MESES.map((m, i) => <option key={i+1} value={i+1}>{m}</option>)}
             </select>
-            <select value={form.diaCumple} onChange={set('diaCumple')} disabled={!form.mesCumple}>
+            <select value={form.diaCumple} onChange={e => { quitarError('cumple'); setForm(f => ({ ...f, diaCumple: e.target.value })); }} disabled={!form.mesCumple}>
               <option value="">Día</option>
               {Array.from({ length: diasDisponibles }, (_, i) => i + 1).map(d => (
                 <option key={d} value={d}>{d}</option>
               ))}
             </select>
           </div>
+          {err('cumple')}
         </div>
 
         <div className="form-group">
-          <label>Fecha de ingreso</label>
+          <label>Fecha de ingreso <span className="req">*</span></label>
           <input type="date" value={form.fechaIngreso} onChange={set('fechaIngreso')} />
+          {err('fechaIngreso')}
         </div>
 
         <div className="form-group">
-          <label>Método de invitación</label>
+          <label>Método de invitación <span className="req">*</span></label>
           <select value={form.metodoInvitacion} onChange={set('metodoInvitacion')}>
             <option value="">Seleccionar...</option>
             {METODOS_INVITACION.map(m => <option key={m} value={m}>{m}</option>)}
           </select>
+          {err('metodoInvitacion')}
         </div>
 
         <div className="form-group">
-          <label>A cargo de</label>
-          <input value={form.aCargoDe} onChange={setFiltered('aCargoDe', onlyLetters)} placeholder="Nombre del responsable" autoComplete="off" />
+          <label>A cargo de <span className="req">*</span></label>
+          <LiderSelect
+            liderNombre={redInfo?.liderNombre}
+            responsables={responsables}
+            value={form.aCargoDe}
+            onChange={(v) => { quitarError('aCargoDe'); setForm(f => ({ ...f, aCargoDe: v })); }}
+            error={errors.aCargoDe}
+          />
         </div>
 
         <div className="form-group">

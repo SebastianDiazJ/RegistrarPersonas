@@ -11,7 +11,8 @@ import HistorialPanel from '../components/HistorialPanel';
 import AnunciosPanel from '../components/AnunciosPanel';
 import { VistaGlobalTab } from '../components/VistaGlobal';
 import { METODOS_INVITACION, RESULTADOS_LLAMADA, MESES, diasPorMes } from '../config/opciones';
-import { onlyLetters, onlyDigits } from '../utils/validacion';
+import { onlyLetters, onlyDigits, sanitizeName, sanitizeText, sanitizeEmail, validarPersonaRed } from '../utils/validacion';
+import LiderSelect, { useResponsablesRed } from '../components/LiderSelect';
 
 const REDES = [
   { id: 'xtreme',  nombre: 'XTREME',  color: '#4338CA' },
@@ -49,6 +50,8 @@ const ConsolidacionPanel = () => {
   const [feedback, setFeedback]       = useState(null);
   const [redesInfo, setRedesInfo]     = useState({});
   const [lastRegistered, setLastRegistered] = useState(null);
+  const [errors, setErrors]         = useState({});
+  const responsables = useResponsablesRed(selectedRed);
 
   // Ver personas
   const [redConsulta, setRedConsulta]         = useState('xtreme');
@@ -111,20 +114,28 @@ const ConsolidacionPanel = () => {
     setLoadingStats(false);
   };
 
-  const handleChange = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }));
-  const handleFiltered = (field, filter) => (e) => setForm(f => ({ ...f, [field]: filter(e.target.value) }));
+  const quitarError = (field) => setErrors(er => ({ ...er, [field]: undefined }));
+  const handleChange = (field) => (e) => { quitarError(field); setForm(f => ({ ...f, [field]: e.target.value })); };
+  const handleFiltered = (field, filter) => (e) => { quitarError(field); setForm(f => ({ ...f, [field]: filter(e.target.value) })); };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitting(true);
     setFeedback(null);
+    const faltantes = validarPersonaRed(form);
+    setErrors(faltantes);
+    if (Object.keys(faltantes).length > 0) {
+      setFeedback({ type: 'error', msg: 'Completa los campos obligatorios marcados con *.' });
+      setLastRegistered(null);
+      return;
+    }
+    setSubmitting(true);
     const llamada = form.contesto
       ? buildCallRecord({ resultado: form.contesto, observacion: form.observacion })
       : null;
     const result = await addPerson(selectedRed, {
-      nombre: form.nombre.trim(), apellido: form.apellido.trim(),
-      telefono: form.telefono.trim(), aCargoDe: form.aCargoDe.trim(),
-      email: form.email.trim(), prayerRequest: form.prayerRequest.trim(),
+      nombre: sanitizeName(form.nombre), apellido: sanitizeName(form.apellido),
+      telefono: onlyDigits(form.telefono), aCargoDe: sanitizeName(form.aCargoDe),
+      email: sanitizeEmail(form.email), prayerRequest: sanitizeText(form.prayerRequest, 500),
       metodoInvitacion: form.metodoInvitacion,
       fechaIngreso: form.fechaIngreso,
       edad: '', ausencias: 0,
@@ -141,6 +152,7 @@ const ConsolidacionPanel = () => {
       setFeedback({ type: 'success', msg: `${form.nombre} registrado/a en ${REDES.find(r => r.id === selectedRed).nombre}` });
       setLastRegistered({ red: selectedRed, nombre: form.nombre, apellido: form.apellido, telefono: form.telefono });
       setForm(EMPTY_FORM);
+      setErrors({});
       loadCounts();
     } else {
       setFeedback({ type: 'error', msg: result.error });
@@ -238,7 +250,7 @@ const ConsolidacionPanel = () => {
                   type="button"
                   className={`consol-red-tab ${selectedRed === red.id ? 'active' : ''}`}
                   style={{ '--c1': red.color }}
-                  onClick={() => { setSelectedRed(red.id); setFeedback(null); setLastRegistered(null); }}
+                  onClick={() => { setSelectedRed(red.id); setFeedback(null); setLastRegistered(null); setErrors({}); setForm(f => ({ ...f, aCargoDe: '' })); }}
                 >
                   {red.nombre}
                 </button>
@@ -247,50 +259,65 @@ const ConsolidacionPanel = () => {
             <form onSubmit={handleSubmit} noValidate className="consol-form" style={{ '--c1': redConfig.color }}>
               <div className="consol-fields-grid">
                 <div className="form-group">
-                  <label>Nombre</label>
+                  <label>Nombre <span className="req">*</span></label>
                   <input value={form.nombre} onChange={handleFiltered('nombre', onlyLetters)} placeholder="Nombre" autoComplete="off" />
+                  {errors.nombre && <span className="masivo-field-error">{errors.nombre}</span>}
                 </div>
                 <div className="form-group">
-                  <label>Apellido</label>
+                  <label>Apellido <span className="req">*</span></label>
                   <input value={form.apellido} onChange={handleFiltered('apellido', onlyLetters)} placeholder="Apellido" autoComplete="off" />
+                  {errors.apellido && <span className="masivo-field-error">{errors.apellido}</span>}
                 </div>
                 <div className="form-group">
-                  <label>Teléfono</label>
-                  <input value={form.telefono} onChange={handleFiltered('telefono', onlyDigits)} placeholder="3001234567" type="tel" inputMode="numeric" autoComplete="off" />
+                  <label>Teléfono <span className="req">*</span></label>
+                  <input value={form.telefono} onChange={handleFiltered('telefono', v => onlyDigits(v).slice(0, 15))} placeholder="3001234567" type="tel" inputMode="numeric" autoComplete="off" />
+                  {errors.telefono && <span className="masivo-field-error">{errors.telefono}</span>}
                 </div>
                 <div className="form-group">
                   <label>Email</label>
                   <input value={form.email} onChange={handleChange('email')} placeholder="correo@ejemplo.com" type="email" autoComplete="off" />
+                  {errors.email && <span className="masivo-field-error">{errors.email}</span>}
+                  <span className="masivo-aviso" style={{ margin: 0 }}>Opcional. Con correo recibe bienvenida y felicitación de cumpleaños.</span>
                 </div>
                 <div className="form-group">
-                  <label>Fecha de ingreso</label>
+                  <label>Fecha de ingreso <span className="req">*</span></label>
                   <input value={form.fechaIngreso} onChange={handleChange('fechaIngreso')} type="date" />
+                  {errors.fechaIngreso && <span className="masivo-field-error">{errors.fechaIngreso}</span>}
                 </div>
                 <div className="form-group">
-                  <label>Método de invitación</label>
+                  <label>Método de invitación <span className="req">*</span></label>
                   <select value={form.metodoInvitacion} onChange={handleChange('metodoInvitacion')}>
                     <option value="">Seleccionar...</option>
                     {METODOS_INVITACION.map(m => <option key={m} value={m}>{m}</option>)}
                   </select>
+                  {errors.metodoInvitacion && <span className="masivo-field-error">{errors.metodoInvitacion}</span>}
                 </div>
                 <div className="form-group">
-                  <label>A cargo de</label>
-                  <input value={form.aCargoDe} onChange={handleFiltered('aCargoDe', onlyLetters)} placeholder="Líder responsable" autoComplete="off" />
+                  <label>A cargo de <span className="req">*</span></label>
+                  <LiderSelect
+                    key={selectedRed}
+                    liderNombre={redesInfo[selectedRed]?.liderNombre}
+                    responsables={responsables}
+                    value={form.aCargoDe}
+                    onChange={(v) => { quitarError('aCargoDe'); setForm(f => ({ ...f, aCargoDe: v })); }}
+                    error={errors.aCargoDe}
+                  />
                 </div>
                 <div className="form-group">
-                  <label>Cumpleaños</label>
+                  <label>Cumpleaños <span className="req">*</span></label>
                   <div className="cumple-row">
-                    <select value={form.mesCumple} onChange={e => setForm(f => ({ ...f, mesCumple: e.target.value, diaCumple: '' }))}>
+                    <select value={form.mesCumple} onChange={e => { quitarError('cumple'); setForm(f => ({ ...f, mesCumple: e.target.value, diaCumple: '' })); }}>
                       <option value="">Mes</option>
                       {MESES.map((m, i) => <option key={i + 1} value={i + 1}>{m}</option>)}
                     </select>
-                    <select value={form.diaCumple} onChange={handleChange('diaCumple')} disabled={!form.mesCumple}>
+                    <select value={form.diaCumple} onChange={e => { quitarError('cumple'); setForm(f => ({ ...f, diaCumple: e.target.value })); }} disabled={!form.mesCumple}>
                       <option value="">Día</option>
                       {Array.from({ length: form.mesCumple ? diasPorMes(parseInt(form.mesCumple)) : 31 }, (_, i) => i + 1).map(d => (
                         <option key={d} value={d}>{d}</option>
                       ))}
                     </select>
                   </div>
+                  {errors.cumple && <span className="masivo-field-error">{errors.cumple}</span>}
                 </div>
                 <div className="form-group">
                   <label>¿Contestó la llamada?</label>
