@@ -52,7 +52,7 @@ jobs:
             if [ "$EVENTO" = "workflow_dispatch" ]; then echo "::error::Faltan secretos de GitHub"; exit 1; fi
             echo "::warning::Faltan secretos de GitHub: se omite el envío."
           fi
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         if: steps.secretos.outputs.listo == 'true'
       - uses: actions/setup-node@v4
         if: steps.secretos.outputs.listo == 'true'
