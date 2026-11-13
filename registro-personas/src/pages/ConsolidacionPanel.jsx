@@ -4,7 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import { getCountByRed, addPerson, getAllPersons, buildCallRecord } from '../services/personService';
 import { computeRedStats } from '../services/statsService';
 import { getAllRedesInfo } from '../services/redService';
-import { buildWhatsAppLink, buildNewPersonMessage, buildMailtoLink } from '../services/whatsappService';
+import { buildWhatsAppLink, buildNewPersonMessage } from '../services/whatsappService';
+import { avisarNuevaPersona, textoAviso } from '../services/avisoService';
 import PersonasTable from '../components/PersonasTable';
 import BaseGeneralPanel from '../components/BaseGeneralPanel';
 import HistorialPanel from '../components/HistorialPanel';
@@ -51,6 +52,7 @@ const ConsolidacionPanel = () => {
   const [redesInfo, setRedesInfo]     = useState({});
   const [lastRegistered, setLastRegistered] = useState(null);
   const [errors, setErrors]         = useState({});
+  const [aviso, setAviso]           = useState('');
   const responsables = useResponsablesRed(selectedRed);
 
   // Ver personas
@@ -151,6 +153,9 @@ const ConsolidacionPanel = () => {
     if (result.success) {
       setFeedback({ type: 'success', msg: `${form.nombre} registrado/a en ${REDES.find(r => r.id === selectedRed).nombre}` });
       setLastRegistered({ red: selectedRed, nombre: form.nombre, apellido: form.apellido, telefono: form.telefono });
+      // Correos automáticos (aviso al líder y bienvenida) en el momento de guardar.
+      setAviso('Enviando los avisos por correo...');
+      avisarNuevaPersona(selectedRed, result.id).then((r) => setAviso(textoAviso(r)));
       setForm(EMPTY_FORM);
       setErrors({});
       loadCounts();
@@ -365,22 +370,7 @@ const ConsolidacionPanel = () => {
                       <span className="whatsapp-hint">Configura el WhatsApp del líder en el Módulo Pastoral</span>
                     )
                   )}
-                  {feedback.type === 'success' && lastRegistered && buildMailtoLink(
-                    redesInfo[lastRegistered.red]?.liderEmail,
-                    'Nueva persona en la red',
-                    buildNewPersonMessage(redesInfo[lastRegistered.red]?.nombre || lastRegistered.red, lastRegistered)
-                  ) && (
-                    <a
-                      className="btn-whatsapp btn-mail"
-                      href={buildMailtoLink(
-                        redesInfo[lastRegistered.red].liderEmail,
-                        'Nueva persona en la red',
-                        buildNewPersonMessage(redesInfo[lastRegistered.red].nombre || lastRegistered.red, lastRegistered)
-                      )}
-                    >
-                      Avisar por correo
-                    </a>
-                  )}
+                  {feedback.type === 'success' && aviso && <span className="whatsapp-hint">{aviso}</span>}
                 </div>
               )}
               <button className="btn-submit" style={{ background: redConfig.color }} disabled={submitting}>

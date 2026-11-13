@@ -44,6 +44,24 @@ Publica de nuevo `registro-personas/firestore.rules` (agrega `anuncios`, `envios
 Actions → **Notificaciones** → *Run workflow* con `simulacion = true` (no envía nada) y revisa el
 resumen del log. Luego una vez con `simulacion = false`.
 
+## Envío inmediato al registrar (función de Vercel)
+
+Al guardar una persona en una red o en Consolidación, la app llama a `registro-personas/api/avisar.js`
+(función de Vercel) que **al instante** envía el aviso al líder de la red y la bienvenida a la persona.
+El workflow de GitHub queda como respaldo (lo que la función no alcance a enviar, lo manda después, sin duplicar:
+las dos vías comparten las marcas de `envios`). **Ingreso masivo** sigue usando solo el envío programado.
+
+Configuración (una sola vez):
+1. Vercel → proyecto → Settings → Environment Variables (Production), crear:
+   - `GMAIL_USER` y `GMAIL_APP_PASSWORD`: los mismos valores de los secretos de GitHub.
+   - `APP_URL` (opcional): `https://registrar-personas.vercel.app` (si no se pone, se toma del dominio de la petición).
+2. Volver a desplegar (Deployments → Redeploy) para que la función lea las variables.
+3. Publicar de nuevo `registro-personas/firestore.rules` (permite a la red crear/cerrar la marca del envío y consultar bajas por hash).
+
+La función no usa claves de Firebase: lee con el token de quien registra, así que las reglas deciden quién puede disparar
+qué. Sin sesión, con sesión anónima o desde otra red responde 403. Prueba automática (con emuladores):
+`node test/avisar.e2e.mjs` (20 casos).
+
 ## Notas importantes
 - **Privacidad:** el repositorio es público, así que los logs de Actions solo muestran conteos;
   nunca nombres ni correos.

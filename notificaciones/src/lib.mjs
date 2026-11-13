@@ -1,31 +1,14 @@
-import crypto from 'node:crypto';
 import { initializeApp, cert } from 'firebase-admin/app';
 import { getFirestore, FieldValue, Timestamp } from 'firebase-admin/firestore';
 import nodemailer from 'nodemailer';
+import { normalizarEmail, esEmailValido, hashEmail, escaparHtml, limpiarLinea, primerNombre, REDES } from '../../registro-personas/api/_compartido.mjs';
 
-export const REDES = [
-  { id: 'xtreme',  nombre: 'XTREME' },
-  { id: 'parejas', nombre: 'PAREJAS' },
-  { id: '360',     nombre: '360' },
-  { id: 'senior',  nombre: 'SENIOR' }
-];
+// Estas utilidades viven en registro-personas/api/_compartido.mjs (las usa también el envío inmediato).
+export { normalizarEmail, esEmailValido, hashEmail, escaparHtml, limpiarLinea, primerNombre, REDES };
 
 // Gmail gratis permite ~500 correos al día: dejamos margen.
 export const LIMITE_DIARIO = 450;
 export const LIMITE_POR_EJECUCION = 100;
-
-export const normalizarEmail = (e) => String(e ?? '').trim().toLowerCase();
-export const esEmailValido = (e) => e.length <= 100 && /^[^@\s<>"']+@[^@\s<>"']+\.[^@\s<>"']{2,}$/.test(e);
-// Mismo hash que calcula el navegador en /baja (SHA-256 del correo normalizado).
-export const hashEmail = (e) => crypto.createHash('sha256').update(normalizarEmail(e), 'utf8').digest('hex');
-
-export const escaparHtml = (v) =>
-  String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-
-// Evita inyección de cabeceras de correo (saltos de línea) en asuntos.
-export const limpiarLinea = (v, max = 150) => String(v ?? '').replace(/[\r\n\u0000-\u001F]+/g, ' ').trim().slice(0, max);
-
-export const primerNombre = (nombre) => limpiarLinea(String(nombre ?? '').trim().split(/\s+/)[0] || '', 40);
 
 // Fecha de hoy en Colombia (los cumpleaños se felicitan en hora local).
 export const hoyBogota = (ahora = new Date()) => {
@@ -96,7 +79,9 @@ export const enviarUnico = async ({ db, correo, clave, tipo, para, nombre = '', 
   if (previo.exists) {
     const d = previo.data();
     // Un envío "simulado" (prueba) no cuenta como enviado: el envío real debe poder hacerse después.
-    if (d.estado !== 'simulado' && (d.estado !== 'error' || (d.intentos || 0) >= 3)) return 'omitido';
+    // Un envío "enviando" de hace más de 10 minutos quedó a medias (p. ej. la función inmediata se cortó): se reintenta.
+    const atascado = d.estado === 'enviando' && d.ts?.toMillis && (Date.now() - d.ts.toMillis()) > 10 * 60 * 1000;
+    if (d.estado !== 'simulado' && !atascado && (d.estado !== 'error' || (d.intentos || 0) >= 3)) return 'omitido';
   }
   const intentos = (previo.data()?.intentos || 0) + 1;
   await ref.set({ tipo, destinatario: para, nombre: limpiarLinea(nombre, 80), asunto: limpiarLinea(asunto), estado: 'enviando', intentos, ts: FieldValue.serverTimestamp(), ...extra });

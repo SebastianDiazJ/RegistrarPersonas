@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { addPerson, updatePerson, buildCallRecord } from '../services/personService';
 import { getRedInfo } from '../services/redService';
-import { buildWhatsAppLink, buildNewPersonMessage, buildMailtoLink } from '../services/whatsappService';
+import { buildWhatsAppLink, buildNewPersonMessage } from '../services/whatsappService';
+import { avisarNuevaPersona, textoAviso } from '../services/avisoService';
 import { METODOS_INVITACION, RESULTADOS_LLAMADA, MESES, diasPorMes, normalizeMetodo } from '../config/opciones';
 import { onlyLetters, onlyDigits, validarPersonaRed } from '../utils/validacion';
 import LiderSelect, { useResponsablesRed } from './LiderSelect';
@@ -29,6 +30,8 @@ const RegisterForm = ({ red, selectedPerson, onFinish }) => {
   const [redInfo, setRedInfo] = useState(null);
   const [lastAdded, setLastAdded] = useState(null);
   const [errors, setErrors] = useState({});
+  const [aviso, setAviso] = useState('');
+  const [errorGuardar, setErrorGuardar] = useState('');
   const responsables = useResponsablesRed(red);
 
   useEffect(() => {
@@ -87,6 +90,7 @@ const RegisterForm = ({ red, selectedPerson, onFinish }) => {
         : ''
     };
 
+    setErrorGuardar('');
     if (selectedPerson) {
       await updatePerson(red, selectedPerson.id, personData);
       setLastAdded(null);
@@ -98,8 +102,15 @@ const RegisterForm = ({ red, selectedPerson, onFinish }) => {
         personData.lastCallDate = record.ts;
         personData.lastCallResult = contesto;
       }
-      await addPerson(red, personData);
+      const res = await addPerson(red, personData);
+      if (!res.success) {
+        setErrorGuardar('No se pudo guardar la persona. Revisa los datos e inténtalo de nuevo.');
+        return;
+      }
       setLastAdded({ nombre: form.nombre, apellido: form.apellido, telefono: form.telefono });
+      // Correos automáticos (aviso al líder y bienvenida) en el momento de guardar.
+      setAviso('Enviando los avisos por correo...');
+      avisarNuevaPersona(red, res.id).then((r) => setAviso(textoAviso(r)));
     }
     onFinish();
     setErrors({});
@@ -131,16 +142,10 @@ const RegisterForm = ({ red, selectedPerson, onFinish }) => {
           ) : (
             <span className="whatsapp-hint">Configura el WhatsApp del líder en el Módulo Pastoral</span>
           )}
-          {buildMailtoLink(redInfo?.liderEmail, 'Nueva persona en la red', buildNewPersonMessage(redInfo?.nombre || red, lastAdded)) && (
-            <a
-              className="btn-whatsapp btn-mail"
-              href={buildMailtoLink(redInfo.liderEmail, 'Nueva persona en la red', buildNewPersonMessage(redInfo.nombre || red, lastAdded))}
-            >
-              Avisar por correo
-            </a>
-          )}
+          {aviso && <span className="whatsapp-hint">{aviso}</span>}
         </div>
       )}
+      {errorGuardar && <div className="login-error">{errorGuardar}</div>}
 
       <form onSubmit={handleSubmit} noValidate>
         <div className="form-group">

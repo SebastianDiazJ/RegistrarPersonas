@@ -3485,5 +3485,3 @@ html { scroll-behavior: smooth; }
 }
 .seg-unsaved .btn-submit { width: auto; padding: 0.5rem 1rem; }
 
-/* Botón "Avisar por correo" junto al de WhatsApp */
-.btn-whatsapp.btn-mail { background: #1B2D45; margin-left: 0.4rem; }

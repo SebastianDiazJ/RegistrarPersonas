@@ -196,10 +196,35 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
-    // Registro de correos enviados: solo lectura para admin/pastor.
+    // Registro de correos enviados. Lectura: solo admin/pastor. El envío programado (GitHub) escribe con
+    // la cuenta de servicio. El envío INMEDIATO (api/avisar.js) crea la marca con el token de quien
+    // acaba de registrar a la persona: solo-creación (impide repetir un correo) y luego solo puede
+    // pasarla de "enviando" a "enviado"/"error". Nada más.
+    function clavesEnvioInmediato() {
+      return ['tipo', 'destinatario', 'nombre', 'asunto', 'estado', 'intentos', 'red', 'origen', 'ts'];
+    }
+    function envioInmediatoValido(id) {
+      let d = request.resource.data;
+      return d.keys().hasOnly(clavesEnvioInmediato()) && d.keys().hasAll(clavesEnvioInmediato())
+        && d.tipo in ['aviso_lider', 'bienvenida']
+        && texto(d.destinatario, 100) && texto(d.nombre, 80) && texto(d.asunto, 150)
+        && d.estado == 'enviando' && d.intentos == 1 && d.origen == 'inmediato' && esRed(d.red)
+        && d.ts == request.time
+        && ((d.tipo == 'aviso_lider' && id.matches('lider_(xtreme|parejas|360|senior)_[A-Za-z0-9_-]{5,40}'))
+            || (d.tipo == 'bienvenida' && id.matches('bienvenida_[0-9a-f]{64}')));
+    }
+    function envioInmediatoActualiza() {
+      let d = request.resource.data;
+      return resource.data.origen == 'inmediato' && resource.data.estado == 'enviando'
+        && d.diff(resource.data).affectedKeys().hasOnly(['estado', 'errorCodigo', 'ts'])
+        && d.estado in ['enviado', 'error'] && d.ts == request.time
+        && (!('errorCodigo' in d) || texto(d.errorCodigo, 30));
+    }
     match /envios/{id} {
       allow read: if esAdminOPastor();
-      allow write: if false;
+      allow create: if (esCuentaDeRed() || esAdminOPastor()) && envioInmediatoValido(id);
+      allow update: if (esCuentaDeRed() || esAdminOPastor()) && envioInmediatoActualiza();
+      allow delete: if false;
     }
 
     // Bajas de correo: cualquiera puede registrar una (id = SHA-256 del correo), nadie puede
@@ -208,7 +233,9 @@ service cloud.firestore {
       allow create: if id.matches('[0-9a-f]{64}')
         && request.resource.data.keys().hasOnly(['fecha'])
         && request.resource.data.fecha == request.time;
-      allow read, update, delete: if false;
+      // `get` por hash exacto (no listado): el envío inmediato comprueba si ese correo se dio de baja.
+      allow get: if conSesion() && !esAnonimo();
+      allow list, update, delete: if false;
     }
 
     // ── Redes ────────────────────────────────────────────────────────────
