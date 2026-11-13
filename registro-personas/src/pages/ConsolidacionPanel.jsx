@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { getCountByRed, addPerson, getAllPersons, buildCallRecord } from '../services/personService';
 import { computeRedStats } from '../services/statsService';
 import { getAllRedesInfo } from '../services/redService';
-import { buildWhatsAppLink, buildNewPersonMessage } from '../services/whatsappService';
+import { buildWhatsAppLink, buildNewPersonMessage, buildMailtoLink } from '../services/whatsappService';
 import PersonasTable from '../components/PersonasTable';
 import BaseGeneralPanel from '../components/BaseGeneralPanel';
 import HistorialPanel from '../components/HistorialPanel';
@@ -364,6 +364,22 @@ const ConsolidacionPanel = () => {
                     ) : (
                       <span className="whatsapp-hint">Configura el WhatsApp del líder en el Módulo Pastoral</span>
                     )
+                  )}
+                  {feedback.type === 'success' && lastRegistered && buildMailtoLink(
+                    redesInfo[lastRegistered.red]?.liderEmail,
+                    'Nueva persona en la red',
+                    buildNewPersonMessage(redesInfo[lastRegistered.red]?.nombre || lastRegistered.red, lastRegistered)
+                  ) && (
+                    <a
+                      className="btn-whatsapp btn-mail"
+                      href={buildMailtoLink(
+                        redesInfo[lastRegistered.red].liderEmail,
+                        'Nueva persona en la red',
+                        buildNewPersonMessage(redesInfo[lastRegistered.red].nombre || lastRegistered.red, lastRegistered)
+                      )}
+                    >
+                      Avisar por correo
+                    </a>
                   )}
                 </div>
               )}

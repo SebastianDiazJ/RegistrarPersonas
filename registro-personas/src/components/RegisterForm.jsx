@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { addPerson, updatePerson, buildCallRecord } from '../services/personService';
 import { getRedInfo } from '../services/redService';
-import { buildWhatsAppLink, buildNewPersonMessage } from '../services/whatsappService';
+import { buildWhatsAppLink, buildNewPersonMessage, buildMailtoLink } from '../services/whatsappService';
 import { METODOS_INVITACION, RESULTADOS_LLAMADA, MESES, diasPorMes, normalizeMetodo } from '../config/opciones';
 import { onlyLetters, onlyDigits, validarPersonaRed } from '../utils/validacion';
 import LiderSelect, { useResponsablesRed } from './LiderSelect';
@@ -130,6 +130,14 @@ const RegisterForm = ({ red, selectedPerson, onFinish }) => {
             </a>
           ) : (
             <span className="whatsapp-hint">Configura el WhatsApp del líder en el Módulo Pastoral</span>
+          )}
+          {buildMailtoLink(redInfo?.liderEmail, 'Nueva persona en la red', buildNewPersonMessage(redInfo?.nombre || red, lastAdded)) && (
+            <a
+              className="btn-whatsapp btn-mail"
+              href={buildMailtoLink(redInfo.liderEmail, 'Nueva persona en la red', buildNewPersonMessage(redInfo.nombre || red, lastAdded))}
+            >
+              Avisar por correo
+            </a>
           )}
         </div>
       )}

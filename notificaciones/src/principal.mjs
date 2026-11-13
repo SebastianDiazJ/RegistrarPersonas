@@ -57,6 +57,8 @@ const procesarNuevos = async () => {
     for (const d of snap.docs) {
       const p = d.data();
       await bienvenidaA(p);
+      // Diagnóstico visible en el resumen: hubo una persona nueva pero la red no tiene correo de líder.
+      if (!esEmailValido(liderEmail)) contar('aviso_lider_sin_correo', 'omitido');
       if (esEmailValido(liderEmail) && hayPresupuesto()) {
         const msg = plantillas.avisoLider({ redNombre: red.nombre, ...p });
         const r = await enviarUnico({

@@ -4,8 +4,9 @@ name: Notificaciones
 # Gratis: GitHub Actions en repositorio público + Gmail. Ver notificaciones/README.md.
 on:
   schedule:
-    - cron: '*/10 * * * *'   # nuevos + anuncios (cada ~10 min; GitHub puede retrasarlo)
-    - cron: '0 12 * * *'     # cumpleaños: 7:00 a. m. hora de Colombia
+    # Se evitan los minutos :00 y :30, los más cargados de GitHub, que retrasa o salta esas ejecuciones.
+    - cron: '7,22,37,52 * * * *'   # nuevos + anuncios (GitHub puede retrasarlo)
+    - cron: '17 12 * * *'          # cumpleaños: ~7:17 a. m. hora de Colombia
   workflow_dispatch:
     inputs:
       modo:
@@ -69,5 +70,5 @@ jobs:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           APP_URL: ${{ secrets.APP_URL }}
           DRY_RUN: ${{ github.event.inputs.simulacion == 'true' && '1' || '0' }}
-          MODO: ${{ github.event.inputs.modo || (github.event.schedule == '0 12 * * *' && 'cumples' || 'nuevos') }}
+          MODO: ${{ github.event.inputs.modo || (github.event.schedule == '17 12 * * *' && 'cumples' || 'nuevos') }}
         run: node src/index.mjs --modo="$MODO"

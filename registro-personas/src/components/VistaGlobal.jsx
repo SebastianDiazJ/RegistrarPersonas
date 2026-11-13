@@ -150,42 +150,90 @@ export const LideresTab = ({ rawPersonas, redesInfo, onSaved }) => {
     });
   };
 
+  // Lo guardado hoy (ya saneado) y lo que el usuario cambió de verdad. Solo se envían los cambios:
+  // así un campo en blanco por una lectura fallida o por una pantalla vieja no borra datos.
+  const guardado = (redId) => ({
+    liderNombre: sanitizeName(redesInfo[redId]?.liderNombre || '', 80),
+    whatsapp: onlyDigits(redesInfo[redId]?.whatsapp || '').slice(0, 20),
+    liderEmail: sanitizeEmail(redesInfo[redId]?.liderEmail || '')
+  });
+  const limpio = (d) => ({
+    liderNombre: sanitizeName(d.liderNombre || '', 80),
+    whatsapp: onlyDigits(d.whatsapp || '').slice(0, 20),
+    liderEmail: sanitizeEmail(d.liderEmail || '')
+  });
+  const cambiosDe = (redId) => {
+    const orig = guardado(redId);
+    const nuevo = limpio(leaderDrafts[redId] || {});
+    const cambios = {};
+    Object.keys(nuevo).forEach(k => { if (nuevo[k] !== orig[k]) cambios[k] = nuevo[k]; });
+    return cambios;
+  };
+  const sucias = REDES.filter(r => !redesInfo[r.id]?.__error && Object.keys(cambiosDe(r.id)).length > 0);
+
+  // Avisa si se intenta cerrar la página con correos o contactos sin guardar.
+  useEffect(() => {
+    if (sucias.length === 0) return undefined;
+    const aviso = (e) => { e.preventDefault(); e.returnValue = ''; };
+    window.addEventListener('beforeunload', aviso);
+    return () => window.removeEventListener('beforeunload', aviso);
+  }, [sucias.length]);
+
+  const guardarRed = async (redId) => {
+    const cambios = cambiosDe(redId);
+    if (Object.keys(cambios).length === 0) return { ok: true, sinCambios: true };
+    if (cambios.liderEmail && !isValidEmail(cambios.liderEmail)) return { ok: false, msg: 'El correo del líder no es válido.' };
+    const result = await updateRedLeaderInfo(redId, cambios);
+    if (!result.success) return { ok: false, msg: result.error };
+    onSaved(redId, cambios);
+    return { ok: true };
+  };
+
   const handleSaveLeader = async (redId) => {
     setSavingRed(redId);
     setSavedFeedback(null);
-    const draft = leaderDrafts[redId];
-    const liderEmail = sanitizeEmail(draft.liderEmail);
-    if (liderEmail && !isValidEmail(liderEmail)) {
-      setSavedFeedback({ redId, ok: false, msg: 'El correo del líder no es válido.' });
-      setSavingRed(null);
-      return;
-    }
-    const result = await updateRedLeaderInfo(redId, {
-      liderNombre: sanitizeName(draft.liderNombre, 80),
-      whatsapp: onlyDigits(draft.whatsapp).slice(0, 20),
-      liderEmail
-    });
-    if (result.success) {
-      onSaved(redId, { ...draft, liderEmail });
-      setSavedFeedback({ redId, ok: true });
-    } else {
-      setSavedFeedback({ redId, ok: false, msg: result.error });
+    const r = await guardarRed(redId);
+    setSavedFeedback({ redId, ...r });
+    setSavingRed(null);
+  };
+
+  const handleSaveAll = async () => {
+    setSavingRed('todas');
+    setSavedFeedback(null);
+    for (const red of sucias) {
+      const r = await guardarRed(red.id);
+      if (!r.ok) { setSavedFeedback({ redId: red.id, ...r }); break; }
     }
     setSavingRed(null);
   };
 
   return (
+    <>
+    {sucias.length > 0 && (
+      <div className="seg-unsaved">
+        <span>Tienes cambios sin guardar en {sucias.length === 1 ? '1 red' : `${sucias.length} redes`}: {sucias.map(r => r.nombre).join(', ')}.</span>
+        <button type="button" className="btn-submit" style={{ background: '#1B2D45' }} disabled={savingRed !== null} onClick={handleSaveAll}>
+          {savingRed === 'todas' ? 'Guardando...' : 'Guardar todos los cambios'}
+        </button>
+      </div>
+    )}
     <div className="pastoral-lideres-grid">
       {REDES.map(red => {
         const draft = leaderDrafts[red.id] || { liderNombre: '', whatsapp: '', liderEmail: '' };
+        const sinCargar = Boolean(redesInfo[red.id]?.__error);
+        const sinGuardar = !sinCargar && Object.keys(cambiosDe(red.id)).length > 0;
         const breakdown = leaderBreakdownByRed[red.id] || [];
         const feedback = savedFeedback && savedFeedback.redId === red.id ? savedFeedback : null;
         return (
           <div key={red.id} className="pastoral-lider-card" style={{ '--c1': red.color }}>
             <div className="pastoral-red-card-header">
               <span className="pastoral-red-name">{red.nombre}</span>
+              {sinGuardar && <span className="pg-estado pg-estado-pend">Sin guardar</span>}
               <span className="pastoral-red-count">{(rawPersonas[red.id] || []).length}</span>
             </div>
+            {sinCargar && (
+              <div className="login-error">No se pudieron cargar los datos de esta red. Recarga la página antes de editarlos para no borrar nada por error.</div>
+            )}
 
             <div className="form-group">
               <label>Nombre del líder de red</label>
@@ -194,6 +242,9 @@ export const LideresTab = ({ rawPersonas, redesInfo, onSaved }) => {
                 onChange={handleDraftChange(red.id, 'liderNombre')}
                 placeholder="Nombre del líder"
                 maxLength={80}
+                name={`lider-nombre-${red.id}`}
+                autoComplete="off"
+                disabled={sinCargar}
               />
             </div>
             <div className="form-group">
@@ -204,6 +255,9 @@ export const LideresTab = ({ rawPersonas, redesInfo, onSaved }) => {
                 placeholder="Ej: 573001234567"
                 type="tel"
                 maxLength={20}
+                name={`lider-whatsapp-${red.id}`}
+                autoComplete="off"
+                disabled={sinCargar}
               />
             </div>
             <div className="form-group">
@@ -214,19 +268,22 @@ export const LideresTab = ({ rawPersonas, redesInfo, onSaved }) => {
                 placeholder="lider@correo.com"
                 type="email"
                 maxLength={100}
+                name={`lider-correo-${red.id}`}
+                autoComplete="off"
+                disabled={sinCargar}
               />
             </div>
 
             {feedback && (
               <div className={feedback.ok ? 'consol-feedback-ok' : 'login-error'}>
-                {feedback.ok ? 'Datos guardados' : feedback.msg}
+                {feedback.ok ? (feedback.sinCambios ? 'No hay cambios por guardar' : 'Datos guardados') : feedback.msg}
               </div>
             )}
 
             <button
               className="btn-submit"
               style={{ background: red.color }}
-              disabled={savingRed === red.id}
+              disabled={savingRed !== null || sinCargar}
               onClick={() => handleSaveLeader(red.id)}
             >
               {savingRed === red.id ? 'Guardando...' : 'Guardar contacto'}
@@ -279,6 +336,7 @@ export const LideresTab = ({ rawPersonas, redesInfo, onSaved }) => {
         );
       })}
     </div>
+    </>
   );
 };
 
